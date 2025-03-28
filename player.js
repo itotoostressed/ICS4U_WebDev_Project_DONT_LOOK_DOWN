@@ -13,19 +13,20 @@ const friction = .9;
 const gravity = -.5;
 const JUMP_FORCE = 10; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
-let ground = 0; // the height of the ground
 
-const platformStyles = window.getComputedStyle(platform); 
-const platformLeft = pxToInt(platformStyles.left);
-const platformWidth = pxToInt(platformStyles.width);
-const platformTop = (pxToInt(platformStyles.bottom) + pxToInt(platformStyles.height));
+var platforms  = []; // array of platforms
+var ground = 0; // the height of the ground
+var platformStyles;
+var platformLeft;
+var platformWidth;
+var platformTop;
 
 
 var velocity = [0,0];
 var position = [0,0];
 var numJumps = 0;
 var isJumping = false;
-var isUnderneath = false;
+var isUnderneath = true;
 
 box.style.left = intToPx(position[X]);
 
@@ -95,6 +96,12 @@ document.addEventListener("keyup", function (event) {
     }
 });
 
+
+platformConstructor(1000, 400, 200, 20);
+platformConstructor(500, 200, 200, 20);
+platformConstructor(0, 100, 200, 20);
+
+
 function updatePosition () {
     // left and right moevement
     if (keys_pressed.left) {
@@ -136,7 +143,6 @@ function updatePosition () {
     // update position
     position[X] += velocity[X];
     position[Y] += velocity[Y];
-
     
     collisionDetection();
 
@@ -144,7 +150,8 @@ function updatePosition () {
     box.style.left = intToPx(position[X]);
     box.style.bottom = intToPx(position[Y]);
 
-    requestAnimationFrame(updatePosition);
+    // setInterval(updatePosition, 1000/60); // 60 fps
+    requestAnimationFrame(updatePosition); 
 }
 
 function collisionDetection() {
@@ -161,25 +168,34 @@ function collisionDetection() {
     if (position[X] >= window.innerWidth - box.offsetWidth) {
         position[X] = window.innerWidth - box.offsetWidth;
         velocity[X] = 0;
-        numJumps = 1;
+        numJumps = 0;
     }
     else if (position[X] <= 0) {
         position[X] = 0;
         velocity[X] = 0;
-        numJumps = 1;
+        numJumps = 0;
     }
 }
 
 
 function checkUnderneath() {
-    if (position[Y] >= platformTop && position[X] >= platformLeft && position[X] <= platformLeft + platformWidth) { 
-        ground = platformTop;
-        isUnderneath = false;
-    } else {
+    let foundPlatform = false;
+
+    platforms.forEach(platform => {
+        if (position[Y] >= platform.top && position[X] + box.offsetWidth > platform.left && position[X] < platform.left + platform.width) { 
+            ground = platform.top;
+            isUnderneath = false;
+            foundPlatform = true;
+        }
+    });
+
+    if (!foundPlatform) {
         ground = 0; 
         isUnderneath = true;
     }
 }
+
+
 
 function intToPx(num) {
     return (num + "px");
@@ -187,4 +203,27 @@ function intToPx(num) {
 
 function pxToInt(px) {
     return parseInt(px.replace("px", ""));
+}
+
+function platformConstructor(left, bottom, width, height) {
+    const platformDiv = document.createElement("div");
+    platformDiv.className = "platform";
+    platformDiv.style.position = "absolute";
+    platformDiv.style.left = intToPx(left);
+    platformDiv.style.bottom = intToPx(bottom);
+    platformDiv.style.width = intToPx(width);
+    platformDiv.style.height = intToPx(height);
+
+    const platform = {
+        left: left,
+        bottom: bottom,
+        width: width,
+        height: height,
+        top: bottom + height
+    };
+
+    platforms.push(platform);
+    document.body.appendChild(platformDiv);
+
+    
 }
