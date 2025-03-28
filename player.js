@@ -171,10 +171,11 @@ function collisionDetection() {
 function checkUnderneath() {
     platformHeight = pxToInt(platform.style.bottom + platform.style.height);
     if (position[Y] >= platformHeight && position[X] >= platform.offsetLeft && position[X] <= platform.offsetLeft + platform.offsetWidth) { 
+        ground = platformHeight
         isUnderneath = true;
     } else {
         isUnderneath = false;
-        ground = platformHeight
+
     }
 }
 
