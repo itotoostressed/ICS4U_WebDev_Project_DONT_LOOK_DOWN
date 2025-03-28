@@ -14,7 +14,7 @@ const gravity = -.5;
 const JUMP_FORCE = 10; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
 const ground = 0; // the height of the ground
-const platformHeight = 0; // the height of the platform
+let platformHeight = 0; // the height of the platform
 
 var velocity = [0,0];
 var position = [0,0];
@@ -127,20 +127,17 @@ function updatePosition () {
     else if (velocity[Y] < -maxVel) {
         velocity[Y] = -maxVel;
     }
-    
-    
-    
+        
     // update position
     position[X] += velocity[X];
     position[Y] += velocity[Y];
 
     
     collisionDetection();
+
     // update the position of the box
     box.style.left = intToPx(position[X]);
     box.style.bottom = intToPx(position[Y]);
-
-    
 
     requestAnimationFrame(updatePosition);
 }
@@ -169,17 +166,15 @@ function collisionDetection() {
 
 
 function checkUnderneath() {
-    platformHeight = pxToInt(platform.style.bottom + platform.style.height);
-    if (position[Y] >= platformHeight && position[X] >= platform.offsetLeft && position[X] <= platform.offsetLeft + platform.offsetWidth) { 
-        ground = platformHeight
+    platformHeight = pxToInt(platform.style.bottom) + pxToInt(platform.style.height);
+    if (position[Y] <= platformHeight && position[X] >= platform.offsetLeft && position[X] <= platform.offsetLeft + platform.offsetWidth) { 
+        ground = platformHeight;
         isUnderneath = true;
     } else {
         isUnderneath = false;
 
     }
 }
-
-
 
 function intToPx(num) {
     return (num + "px");
