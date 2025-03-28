@@ -1,4 +1,6 @@
 const box = document.getElementById("box");
+const platform = document.getElementById("platform");
+
 
 // constants for the x and y axis
 const X = 0; 
@@ -8,14 +10,17 @@ const Y = 1;
 const maxVel = 10;
 const accel = 1;
 const friction = .9;
-const gravity = .5;
+const gravity = -.5;
 const JUMP_FORCE = 10; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
+const ground = 0; // the height of the ground
+const platformHeight = 0; // the height of the platform
 
 var velocity = [0,0];
 var position = [0,0];
 var numJumps = 0;
 var isJumping = false;
+var isUnderneath = false;
 
 box.style.left = intToPx(position[X]);
 
@@ -99,7 +104,7 @@ function updatePosition () {
         velocity[Y] -= accel;
     }
     else if (!keys_pressed.up) {
-        velocity[Y] -= gravity;
+        velocity[Y] += gravity;
     }
 
     // apply gravity/friction when no keys are pressed
@@ -122,25 +127,63 @@ function updatePosition () {
     else if (velocity[Y] < -maxVel) {
         velocity[Y] = -maxVel;
     }
-
+    
+    
+    
     // update position
     position[X] += velocity[X];
     position[Y] += velocity[Y];
 
-    // check if the player is on the ground
-    if (position[Y] <= 0) {
-        position[Y] = 0;
-        velocity[Y] = 0;
-        numJumps = 0;
-    }
     
+    collisionDetection();
     // update the position of the box
     box.style.left = intToPx(position[X]);
     box.style.bottom = intToPx(position[Y]);
 
+    
+
     requestAnimationFrame(updatePosition);
 }
 
+function collisionDetection() {
+
+    checkUnderneath();
+
+    // check if the player is on the ground
+    if (position[Y] <= ground) {
+        position[Y] = ground; // set the position to the ground
+        velocity[Y] = 0;
+        numJumps = 0;
+    }
+
+    // check if the player is at the edge of the screen
+    if (position[X] >= window.innerWidth - box.offsetWidth) {
+        position[X] = window.innerWidth - box.offsetWidth;
+        velocity[X] = 0;
+    }
+    else if (position[X] <= 0) {
+        position[X] = 0;
+        velocity[X] = 0;
+    }    
+}
+
+
+function checkUnderneath() {
+    platformHeight = pxToInt(platform.style.bottom + platform.style.height);
+    if (position[Y] >= platformHeight && position[X] >= platform.offsetLeft && position[X] <= platform.offsetLeft + platform.offsetWidth) { 
+        isUnderneath = true;
+    } else {
+        isUnderneath = false;
+        ground = platformHeight
+    }
+}
+
+
+
 function intToPx(num) {
     return (num + "px");
+}
+
+function pxToInt(px) {
+    return parseInt(px.replace("px", ""));
 }
