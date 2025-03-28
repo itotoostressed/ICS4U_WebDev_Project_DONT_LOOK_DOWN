@@ -13,8 +13,13 @@ const friction = .9;
 const gravity = -.5;
 const JUMP_FORCE = 10; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
-const ground = 0; // the height of the ground
-let platformHeight = 0; // the height of the platform
+let ground = 0; // the height of the ground
+
+const platformStyles = window.getComputedStyle(platform); 
+const platformLeft = pxToInt(platformStyles.left);
+const platformWidth = pxToInt(platformStyles.width);
+const platformTop = (pxToInt(platformStyles.bottom) + pxToInt(platformStyles.height));
+
 
 var velocity = [0,0];
 var position = [0,0];
@@ -143,9 +148,6 @@ function updatePosition () {
 }
 
 function collisionDetection() {
-
-    checkUnderneath();
-
     // check if the player is on the ground
     if (position[Y] <= ground) {
         position[Y] = ground; // set the position to the ground
@@ -153,26 +155,29 @@ function collisionDetection() {
         numJumps = 0;
     }
 
+    checkUnderneath();
+
     // check if the player is at the edge of the screen
     if (position[X] >= window.innerWidth - box.offsetWidth) {
         position[X] = window.innerWidth - box.offsetWidth;
         velocity[X] = 0;
+        numJumps = 1;
     }
     else if (position[X] <= 0) {
         position[X] = 0;
         velocity[X] = 0;
-    }    
+        numJumps = 1;
+    }
 }
 
 
 function checkUnderneath() {
-    platformHeight = pxToInt(platform.style.bottom) + pxToInt(platform.style.height);
-    if (position[Y] <= platformHeight && position[X] >= platform.offsetLeft && position[X] <= platform.offsetLeft + platform.offsetWidth) { 
-        ground = platformHeight;
-        isUnderneath = true;
-    } else {
+    if (position[Y] >= platformTop && position[X] >= platformLeft && position[X] <= platformLeft + platformWidth) { 
+        ground = platformTop;
         isUnderneath = false;
-
+    } else {
+        ground = 0; 
+        isUnderneath = true;
     }
 }
 
