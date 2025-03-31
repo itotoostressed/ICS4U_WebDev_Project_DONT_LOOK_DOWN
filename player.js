@@ -16,10 +16,7 @@ const maxJump = 2; // how many times the player can jump
 
 var platforms  = []; // array of platforms
 var ground = 0; // the height of the ground
-var platformStyles;
-var platformLeft;
-var platformWidth;
-var platformTop;
+var walls = 0; // array of walls
 
 
 var velocity = [0,0];
@@ -99,7 +96,7 @@ document.addEventListener("keyup", function (event) {
 
 platformConstructor(1000, 400, 200, 20);
 platformConstructor(500, 200, 200, 20);
-platformConstructor(0, 100, 200, 20);
+platformConstructor(2000, 200, 200, 20);
 
 
 function updatePosition () {
@@ -187,6 +184,8 @@ function checkUnderneath() {
             isUnderneath = false;
             foundPlatform = true;
         }
+
+        // if (position[Y] + box.)
     });
 
     if (!foundPlatform) {
