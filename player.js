@@ -185,7 +185,7 @@ function checkUnderneath() {
             foundPlatform = true;
         }
 
-        // if (position[Y] + box.)
+        // if (position[Y] + box.) make sure that player doesn't phase through the platform
     });
 
     if (!foundPlatform) {
@@ -194,7 +194,11 @@ function checkUnderneath() {
     }
 }
 
-
+function updateMap () {
+    while (keys_pressed.right === true && position[X] === window.length) {
+        platform.left -= velocity;
+    }
+}
 
 function intToPx(num) {
     return (num + "px");
@@ -212,6 +216,7 @@ function platformConstructor(left, bottom, width, height) {
     platformDiv.style.bottom = intToPx(bottom);
     platformDiv.style.width = intToPx(width);
     platformDiv.style.height = intToPx(height);
+    platformDiv.style.backgroundColor = "black";
 
     const platform = {
         left: left,
@@ -222,7 +227,5 @@ function platformConstructor(left, bottom, width, height) {
     };
 
     platforms.push(platform);
-    document.body.appendChild(platformDiv);
-
-    
+    document.body.appendChild(platformDiv);    
 }
