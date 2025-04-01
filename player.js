@@ -11,7 +11,7 @@ const maxVel = 10;
 const accel = 1;
 const friction = .9;
 const gravity = -.5;
-const JUMP_FORCE = 10; // how high the player jumps
+const JUMP_FORCE = 100; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
 
 var platforms  = []; // array of platforms
@@ -165,8 +165,8 @@ function collisionDetection() {
     checkUnderneath();
 
     // check if the player is at the edge of the screen
-    if (position[X] >= window.innerWidth - box.offsetWidth) {
-        position[X] = window.innerWidth - box.offsetWidth;
+    if (position[X] >= 4000 - box.offsetWidth) {
+        position[X] = 4000 - box.offsetWidth;
         velocity[X] = 0;
         numJumps = 0;
     }
