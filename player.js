@@ -11,12 +11,15 @@ const maxVel = 10;
 const accel = 1;
 const friction = .9;
 const gravity = -.5;
-const JUMP_FORCE = 15; // how high the player jumps
+const JUMP_FORCE = 10; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
 
 var platforms  = []; // array of platforms
 var ground = 0; // the height of the ground
-var walls = 0; // array of walls
+var platformStyles;
+var platformLeft;
+var platformWidth;
+var platformTop;
 
 
 var velocity = [0,0];
@@ -96,8 +99,7 @@ document.addEventListener("keyup", function (event) {
 
 platformConstructor(1000, 400, 200, 20);
 platformConstructor(500, 200, 200, 20);
-platformConstructor(2000, 200, 200, 20);
-platformConstructor(9000, 200, 200, 20);
+platformConstructor(0, 100, 200, 20);
 
 
 function updatePosition () {
@@ -160,7 +162,6 @@ function collisionDetection() {
         numJumps = 0;
     }
 
-
     checkUnderneath();
 
     // check if the player is at the edge of the screen
@@ -168,7 +169,6 @@ function collisionDetection() {
         position[X] = window.innerWidth - box.offsetWidth;
         velocity[X] = 0;
         numJumps = 0;
-        platforms.left = intToPx(platforms.left - velocity[X]);
     }
     else if (position[X] <= 0) {
         position[X] = 0;
@@ -187,8 +187,6 @@ function checkUnderneath() {
             isUnderneath = false;
             foundPlatform = true;
         }
-
-        // if (position[Y] + box.)
     });
 
     if (!foundPlatform) {
@@ -215,6 +213,7 @@ function platformConstructor(left, bottom, width, height) {
     platformDiv.style.bottom = intToPx(bottom);
     platformDiv.style.width = intToPx(width);
     platformDiv.style.height = intToPx(height);
+    platformDiv.style.backgroundColor = "black";
 
     const platform = {
         left: left,
