@@ -11,7 +11,7 @@ const maxVel = 10;
 const accel = 1;
 const friction = .9;
 const gravity = -.5;
-const JUMP_FORCE = 10; // how high the player jumps
+const JUMP_FORCE = 15; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
 
 var platforms  = []; // array of platforms
@@ -97,6 +97,7 @@ document.addEventListener("keyup", function (event) {
 platformConstructor(1000, 400, 200, 20);
 platformConstructor(500, 200, 200, 20);
 platformConstructor(2000, 200, 200, 20);
+platformConstructor(9000, 200, 200, 20);
 
 
 function updatePosition () {
@@ -159,6 +160,7 @@ function collisionDetection() {
         numJumps = 0;
     }
 
+
     checkUnderneath();
 
     // check if the player is at the edge of the screen
@@ -166,6 +168,7 @@ function collisionDetection() {
         position[X] = window.innerWidth - box.offsetWidth;
         velocity[X] = 0;
         numJumps = 0;
+        platforms.left = intToPx(platforms.left - velocity[X]);
     }
     else if (position[X] <= 0) {
         position[X] = 0;
@@ -185,7 +188,7 @@ function checkUnderneath() {
             foundPlatform = true;
         }
 
-        // if (position[Y] + box.) make sure that player doesn't phase through the platform
+        // if (position[Y] + box.)
     });
 
     if (!foundPlatform) {
@@ -194,11 +197,7 @@ function checkUnderneath() {
     }
 }
 
-function updateMap () {
-    while (keys_pressed.right === true && position[X] === window.length) {
-        platform.left -= velocity;
-    }
-}
+
 
 function intToPx(num) {
     return (num + "px");
@@ -216,7 +215,6 @@ function platformConstructor(left, bottom, width, height) {
     platformDiv.style.bottom = intToPx(bottom);
     platformDiv.style.width = intToPx(width);
     platformDiv.style.height = intToPx(height);
-    platformDiv.style.backgroundColor = "black";
 
     const platform = {
         left: left,
@@ -227,5 +225,7 @@ function platformConstructor(left, bottom, width, height) {
     };
 
     platforms.push(platform);
-    document.body.appendChild(platformDiv);    
+    document.body.appendChild(platformDiv);
+
+    
 }
