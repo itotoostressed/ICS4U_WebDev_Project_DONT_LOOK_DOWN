@@ -6,27 +6,28 @@ const platform = document.getElementById("platform");
 const X = 0; 
 const Y = 1;
 
+var platforms  = []; // array of platforms
+var ground = 0; // the height of the ground
+var walls = 0; // array of walls
+
+var cameraOffsetX = 0; // the offset of the camera
+var gameContainer = document.getElementById("gameContainer");
+var velocity = [0,0];
+var position = [100,200];
+var numJumps = 0;
+var isJumping = false;
+var isUnderneath = true;
+
 // constants for the player's movement
 const maxVel = 10;
 const accel = 1;
 const friction = .9;
 const gravity = -.5;
-const JUMP_FORCE = 100; // how high the player jumps
+const JUMP_FORCE = 15; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
+var screenFollowRight = cameraOffsetX + window.innerWidth*.75;
+var screenFollowLeft = cameraOffsetX + window.innerWidth*.25;
 
-var platforms  = []; // array of platforms
-var ground = 0; // the height of the ground
-var platformStyles;
-var platformLeft;
-var platformWidth;
-var platformTop;
-
-
-var velocity = [0,0];
-var position = [0,0];
-var numJumps = 0;
-var isJumping = false;
-var isUnderneath = true;
 
 box.style.left = intToPx(position[X]);
 
@@ -99,7 +100,9 @@ document.addEventListener("keyup", function (event) {
 
 platformConstructor(1000, 400, 200, 20);
 platformConstructor(500, 200, 200, 20);
-platformConstructor(0, 100, 200, 20);
+platformConstructor(2000, 200, 200, 20);
+platformConstructor(9000, 200, 200, 20);
+platformConstructor(5000, 200, 200, 20);
 
 
 function updatePosition () {
@@ -146,6 +149,21 @@ function updatePosition () {
     
     collisionDetection();
 
+    if (position[X] > screenFollowRight) {
+        // If moving right past the threshold, shift the camera
+        cameraOffsetX = -(position[X] - screenFollowRight);
+        if (keys_pressed.left) {
+            
+        }
+    } 
+    else if (position[X] < screenFollowLeft) {
+        // If moving left past the threshold, shift the camera
+        cameraOffsetX = -(position[X] - screenFollowLeft);
+    }
+
+    // **Apply the camera offset correctly**
+    gameContainer.style.transform = `translateX(${cameraOffsetX}px)`;
+
     // update the position of the box
     box.style.left = intToPx(position[X]);
     box.style.bottom = intToPx(position[Y]);
@@ -162,13 +180,15 @@ function collisionDetection() {
         numJumps = 0;
     }
 
+
     checkUnderneath();
 
     // check if the player is at the edge of the screen
-    if (position[X] >= 4000 - box.offsetWidth) {
-        position[X] = 4000 - box.offsetWidth;
+    if (position[X] >= 10000 - box.offsetWidth) {
+        position[X] = 10000 - box.offsetWidth;
         velocity[X] = 0;
         numJumps = 0;
+        // platform.left = intToPx(platform.left - velocity[X]);
     }
     else if (position[X] <= 0) {
         position[X] = 0;
@@ -179,21 +199,17 @@ function collisionDetection() {
 
 
 function checkUnderneath() {
-    let foundPlatform = false;
+    ground = 0; 
+    isUnderneath = true;
 
     platforms.forEach(platform => {
         if (position[Y] >= platform.top && position[X] + box.offsetWidth > platform.left && position[X] < platform.left + platform.width) { 
             ground = platform.top;
             isUnderneath = false;
-            foundPlatform = true;
         }
     });
-
-    if (!foundPlatform) {
-        ground = 0; 
-        isUnderneath = true;
-    }
 }
+
 
 
 
@@ -213,7 +229,6 @@ function platformConstructor(left, bottom, width, height) {
     platformDiv.style.bottom = intToPx(bottom);
     platformDiv.style.width = intToPx(width);
     platformDiv.style.height = intToPx(height);
-    platformDiv.style.backgroundColor = "black";
 
     const platform = {
         left: left,
@@ -224,7 +239,7 @@ function platformConstructor(left, bottom, width, height) {
     };
 
     platforms.push(platform);
-    document.body.appendChild(platformDiv);
+    gameContainer.appendChild(platformDiv);
 
     
 }
