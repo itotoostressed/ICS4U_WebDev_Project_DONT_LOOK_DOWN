@@ -17,16 +17,17 @@ var position = [100,200];
 var numJumps = 0;
 var isJumping = false;
 var isUnderneath = true;
+var isCrouching = false;
 
 // constants for the player's movement
 const maxVel = 10;
 const accel = 1;
 const friction = .9;
-const gravity = -.5;
+const gravity = -.7;
 const JUMP_FORCE = 15; // how high the player jumps
 const maxJump = 2; // how many times the player can jump
-var screenFollowRight = cameraOffsetX + window.innerWidth*.75;
-var screenFollowLeft = cameraOffsetX + window.innerWidth*.25;
+var screenFollowRight =  window.innerWidth*.75;
+var screenFollowLeft =  window.innerWidth*.25; 
 
 
 box.style.left = intToPx(position[X]);
@@ -134,14 +135,6 @@ function updatePosition () {
     else if (velocity[X] < -maxVel) {
         velocity[X] = -maxVel;
     }
-
-    //limiting velocity up and down
-    if (velocity[Y] > maxVel) {
-        velocity[Y] = maxVel;
-    }
-    else if (velocity[Y] < -maxVel) {
-        velocity[Y] = -maxVel;
-    }
         
     // update position
     position[X] += velocity[X];
@@ -168,7 +161,6 @@ function updatePosition () {
     box.style.left = intToPx(position[X]);
     box.style.bottom = intToPx(position[Y]);
 
-    // setInterval(updatePosition, 1000/60); // 60 fps
     requestAnimationFrame(updatePosition); 
 }
 
@@ -240,6 +232,16 @@ function platformConstructor(left, bottom, width, height) {
 
     platforms.push(platform);
     gameContainer.appendChild(platformDiv);
+}
 
-    
+function playerAnimate (state) {
+    switch(state) {
+        case "crouch":
+            box.style.backgroundImage = URL('tileset_1');
+            break;
+        case "jump":
+            break;
+        case "attack" :
+            break;
+    }
 }
