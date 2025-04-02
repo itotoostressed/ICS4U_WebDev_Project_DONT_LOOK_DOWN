@@ -1,4 +1,18 @@
-.box {
+body {
+    background-repeat: repeat-x;
+    background-image: url('test-background.png');
+    background-size: 100% 100%;
+    overflow: hidden;
+}
+
+#gameContainer {
+    position: absolute;
+    width: 10000px; /* Full width */
+    height: 100vh; /* Full height */
+    overflow: hidden; /* Prevents scrolling */
+}
+
+#box {
  position: absolute;
  width: 80px;
  height: 160px;
@@ -6,4 +20,13 @@
  bottom: 0px;
  left: 0px;   
  box-shadow: 0px 4px 10px #202020;
+}
+
+.platform {
+    position: absolute;
+    width: 20%;
+    height: 20px;
+    background-color: #202020;
+    bottom: 200px;
+    left: 100px;
 }
