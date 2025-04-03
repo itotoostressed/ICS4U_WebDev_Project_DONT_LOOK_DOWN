@@ -7,6 +7,7 @@ const X = 0;
 const Y = 1;
 
 var platforms  = []; // array of platforms
+var enemies = []; // array of enemies
 var ground = 0; // the height of the ground
 var walls = 0; // array of walls
 
@@ -29,15 +30,13 @@ const maxJump = 2; // how many times the player can jump
 var screenFollowRight =  window.innerWidth*.75;
 var screenFollowLeft =  window.innerWidth*.25; 
 
-
-box.style.left = intToPx(position[X]);
-
 var keys_pressed = {
     left: false,
     right: false,
     up: false,
     down: false
 }
+
 
 updatePosition();
 
@@ -99,12 +98,12 @@ document.addEventListener("keyup", function (event) {
 });
 
 
-platformConstructor(1000, 400, 200, 20);
-platformConstructor(500, 200, 200, 20);
-platformConstructor(2000, 200, 200, 20);
-platformConstructor(9000, 200, 200, 20);
-platformConstructor(5000, 200, 200, 20);
+platformConstructor(1100, 400, 600, 20);
+platformConstructor(400, 200, 600, 20);
+platformConstructor(2000, 200, 600, 20);
+platformConstructor(5000, 200, 600, 20);
 
+enemyConstructor(1000, 500, 80, 160);
 
 function updatePosition () {
     // left and right moevement
@@ -141,22 +140,12 @@ function updatePosition () {
     position[Y] += velocity[Y];
     
     collisionDetection();
+    moveEnemy();
 
-    if (position[X] > screenFollowRight) {
-        // If moving right past the threshold, shift the camera
-        cameraOffsetX = -(position[X] - screenFollowRight);
-        if (keys_pressed.left) {
-            
-        }
-    } 
-    else if (position[X] < screenFollowLeft) {
-        // If moving left past the threshold, shift the camera
-        cameraOffsetX = -(position[X] - screenFollowLeft);
-    }
+    updateScreenBounds();
 
-    // **Apply the camera offset correctly**
-    gameContainer.style.transform = `translateX(${cameraOffsetX}px)`;
-
+    
+    
     // update the position of the box
     box.style.left = intToPx(position[X]);
     box.style.bottom = intToPx(position[Y]);
@@ -176,8 +165,8 @@ function collisionDetection() {
     checkUnderneath();
 
     // check if the player is at the edge of the screen
-    if (position[X] >= 10000 - box.offsetWidth) {
-        position[X] = 10000 - box.offsetWidth;
+    if (position[X] >= 5000 - box.offsetWidth) {
+        position[X] = 5000 - box.offsetWidth;
         velocity[X] = 0;
         numJumps = 0;
         // platform.left = intToPx(platform.left - velocity[X]);
@@ -188,7 +177,6 @@ function collisionDetection() {
         numJumps = 0;
     }
 }
-
 
 function checkUnderneath() {
     ground = 0; 
@@ -203,15 +191,9 @@ function checkUnderneath() {
 }
 
 
+function intToPx(num) { return (num + "px");}
 
-
-function intToPx(num) {
-    return (num + "px");
-}
-
-function pxToInt(px) {
-    return parseInt(px.replace("px", ""));
-}
+function pxToInt(px) {return parseInt(px.replace("px", ""));}
 
 function platformConstructor(left, bottom, width, height) {
     const platformDiv = document.createElement("div");
@@ -233,6 +215,77 @@ function platformConstructor(left, bottom, width, height) {
     platforms.push(platform);
     gameContainer.appendChild(platformDiv);
 }
+
+function moveEnemy() {
+    enemies.forEach(enemy => {
+        // Check if the enemy reaches the edge of the platform or screen
+        if (enemy.left + enemy.width >= 5000 || enemy.left <= 0) {
+            enemy.direction *= -1; // Reverse direction when the enemy hits an edge
+        }
+
+        // Move the enemy in the current direction
+        enemy.left += enemy.direction * enemy.speed;
+        enemy.div.style.left = intToPx(enemy.left); // Use the stored div here
+    });
+}
+
+function enemyConstructor(left, bottom, width, height) {
+    const enemyDiv = document.createElement("div");
+    enemyDiv.className = "enemy";
+    enemyDiv.style.position = "absolute";
+    enemyDiv.style.left = intToPx(left);
+    enemyDiv.style.bottom = intToPx(bottom);
+    enemyDiv.style.width = intToPx(width);
+    enemyDiv.style.height = intToPx(height);
+    enemyDiv.style.backgroundColor = "red"; // For testing purposes
+
+    const enemy = {
+        left: left,
+        bottom: bottom,
+        width: width,
+        height: height,
+        top: bottom + height,
+        direction: 1, // 1 for right, -1 for left
+        speed: 5, // enemy movement speed
+        div: enemyDiv // Store the enemy div reference for later use
+    };
+
+    enemies.push(enemy);
+    gameContainer.appendChild(enemyDiv);
+}
+
+
+
+function checkPlayerEnemyCollision() {
+    enemies.forEach(enemy => {
+        if (position[X] < enemy.left + enemy.width && position[X] + box.offsetWidth > enemy.left && position[Y] < enemy.bottom + enemy.height && position[Y] + box.offsetHeight > enemy.bottom) {
+            // Handle collision, e.g., game over or reduce player health
+            console.log("Player collided with enemy!");
+        }
+    });
+}
+
+function updateScreenBounds() {
+    screenFollowRight =  window.innerWidth * 0.75;
+    screenFollowLeft =  window.innerWidth * 0.25;
+    
+    if (position[X] > screenFollowRight) {
+        cameraOffsetX = -(position[X] - screenFollowRight);
+        if (keys_pressed.left) {
+            
+        }
+    } 
+    else if (position[X] < screenFollowLeft) {
+        cameraOffsetX = -(position[X] - screenFollowLeft);
+    }
+
+    // **Apply the camera offset correctly**
+    gameContainer.style.transform = `translateX(${cameraOffsetX}px)`;
+    console.log( cameraOffsetX);
+}
+
+window.addEventListener("resize", updateScreenBounds);
+
 
 function playerAnimate (state) {
     switch(state) {
