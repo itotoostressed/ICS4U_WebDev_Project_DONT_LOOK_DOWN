@@ -1,304 +1,299 @@
-const box = document.getElementById("box");
-const platform = document.getElementById("platform");
-
-
-// constants for the x and y axis
-const X = 0; 
+// Constants
+const X = 0;
 const Y = 1;
+const MAX_VEL = 10;
+const ACCEL = 1;
+const FRICTION = 0.9;
+const GRAVITY = -0.7;
+const JUMP_FORCE = 15;
+const MAX_JUMP = 2;
+var onPlatform = false;
 
-var platforms  = []; // array of platforms
-var enemies = []; // array of enemies
-var ground = 0; // the height of the ground
-var walls = 0; // array of walls
+class GameObject {
+    constructor(left, bottom, width, height) {
+        this.left = left;
+        this.bottom = bottom
+        this.width = width;
+        this.height = height;
+        this.top = bottom + height;
+        this.right = left + width;
+        this.element = null;
+    }
 
-var cameraOffsetX = 0; // the offset of the camera
-var gameContainer = document.getElementById("gameContainer");
-var velocity = [0,0];
-var position = [100,200];
-var numJumps = 0;
-var isJumping = false;
-var isUnderneath = true;
-var isCrouching = false;
+    intToPx(num) {
+        return `${num}px`;
+    }
 
-// constants for the player's movement
-const maxVel = 10;
-const accel = 1;
-const friction = .9;
-const gravity = -.7;
-const JUMP_FORCE = 15; // how high the player jumps
-const maxJump = 2; // how many times the player can jump
-var screenFollowRight =  window.innerWidth*.75;
-var screenFollowLeft =  window.innerWidth*.25; 
+    pxToInt(px) {
+        return parseInt(px.replace("px", ""));
+    }
 
-var keys_pressed = {
-    left: false,
-    right: false,
-    up: false,
-    down: false
+    updateElementPosition() {
+        if (this.element) {
+            this.element.style.left = this.intToPx(this.left);
+            this.element.style.bottom = this.intToPx(this.bottom);
+            this.element.style.width = this.intToPx(this.width);
+            this.element.style.height = this.intToPx(this.height);
+        }
+    }
+
+    collidesWith(other) {
+        return (
+            this.left < other.right &&
+            this.right > other.left &&
+            this.bottom < other.top &&
+            this.top > other.bottom
+        );
+    }
 }
 
+class Player extends GameObject {
+    constructor(left, bottom, width, height) {
+        super(left, bottom, width, height);
+        this.element = document.getElementById("box");
+        this.velocity = [0, 0];
+        this.numJumps = 0;
+        this.isJumping = false;
+        this.isCrouching = false;
+        this.ground = 0;
+        this.keysPressed = {
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+    }
 
-updatePosition();
+    updatePosition(platforms) {
+        // Horizontal movement
+        if (this.keysPressed.left) {
+            this.velocity[X] -= ACCEL;
+        } else if (this.keysPressed.right) {
+            this.velocity[X] += ACCEL;
+        }
 
-document.addEventListener("keydown", function (event) {
-    
-    // check which key was pressed (for optimization can ignore this if the key is the same as the previous but whatever)
-    switch (event.key) {
+        // Vertical movement
+        if (this.keysPressed.down) {
+            this.velocity[Y] -= ACCEL;
+        } else if (!this.keysPressed.up) {
+            this.velocity[Y] += GRAVITY;
+        }
 
-        // left
-        case "a": 
-        case "A":
-            keys_pressed.left = true;
-            break;
+        // Apply friction
+        if (!this.keysPressed.left && !this.keysPressed.right) {
+            this.velocity[X] *= FRICTION;
+        }
 
-        // right    
-        case "d":
-        case "D":
-            keys_pressed.right = true;
-            break;
+        // Limit velocity
+        this.velocity[X] = Math.max(Math.min(this.velocity[X], MAX_VEL), -MAX_VEL);
 
-        // up (jump)    
-         case "w":
-         case " ":
-            if (numJumps <= maxJump) {
-                velocity[Y] = JUMP_FORCE;
-                numJumps++;
-                isJumping = true;
+        // Update position
+        this.left += this.velocity[X];
+        this.bottom += this.velocity[Y];
+        this.top = this.bottom + this.height;
+        this.right = this.left + this.width;
+
+        // Update collision detection
+        this.collisionDetection(platforms);
+        this.updateElementPosition();
+    }
+
+    collisionDetection(platforms) {
+        // Check ground collision
+        if (this.bottom <= this.ground) {
+            this.bottom = this.ground;
+            this.velocity[Y] = 0;
+            this.numJumps = 0;
+        }
+
+        // Check platform collisions
+        this.checkUnderneath(platforms);
+
+        // Screen boundaries
+        if (this.left <= 0) {
+            this.left = 0;
+            this.velocity[X] = 0;
+        }
+    }
+
+    checkUnderneath(platforms) {
+        this.ground = 0;
+        platforms.forEach(platform => {
+            if (this.bottom >= platform.top && this.right > platform.left && this.left < platform.right) {
+                this.ground = platform.top;
+                onPlatform = true;
             }
-            
-            break;
-
-         // down (crouch)    
-         case "s":
-         case "S":
-             keys_pressed.down = true;
-             break;
-    }
-});
-
-// listen for button RELEASE
-document.addEventListener("keyup", function (event) {
-    
-    // switch the pressed key; pretty self-explanatory
-    switch (event.key) {
-        case "a":
-            keys_pressed.left = false;
-            break;
-        case "d":
-            keys_pressed.right = false;
-            break;
-        case "w":
-        case " ":
-            keys_pressed.up = false;
-            break;
-        case "s":
-            keys_pressed.down = false;
-            break;
-    }
-});
-
-
-platformConstructor(1100, 400, 600, 20);
-platformConstructor(400, 200, 600, 20);
-platformConstructor(2000, 200, 600, 20);
-platformConstructor(5000, 200, 600, 20);
-
-enemyConstructor(1000, 500, 80, 160);
-
-function updatePosition () {
-    // left and right moevement
-    if (keys_pressed.left) {
-        velocity[X] -= accel;
-    }
-    else if (keys_pressed.right) {
-        velocity[X] += accel;
+            if (this.keysPressed.down && onPlatform) {
+                this.ground = 0;
+            }
+        });
     }
 
-    //up and down movement
-    if (keys_pressed.down) {
-        velocity[Y] -= accel;
-    }
-    else if (!keys_pressed.up) {
-        velocity[Y] += gravity;
+    handleKeyDown(event) {
+        switch (event.key.toLowerCase()) {
+            case "a":
+                this.keysPressed.left = true;
+                break;
+            case "d":
+                this.keysPressed.right = true;
+                break;
+            case "w":
+            case " ":
+                if (this.numJumps < MAX_JUMP) {
+                    this.velocity[Y] = JUMP_FORCE;
+                    this.numJumps++;
+                    this.isJumping = true;
+                }
+                break;
+            case "s":
+                this.keysPressed.down = true;
+                break;
+        }
     }
 
-    // apply gravity/friction when no keys are pressed
-    if (!keys_pressed.left && !keys_pressed.right) {
-        velocity[X] *= friction;
+    handleKeyUp(event) {
+        switch (event.key.toLowerCase()) {
+            case "a":
+                this.keysPressed.left = false;
+                break;
+            case "d":
+                this.keysPressed.right = false;
+                break;
+            case "w":
+            case " ":
+                this.keysPressed.up = false;
+                break;
+            case "s":
+                this.keysPressed.down = false;
+                break;
+        }
+    }
+}
+
+class Platform extends GameObject {
+    constructor(left, bottom, width, height) {
+        super(left, bottom, width, height);
+        this.createElement();
     }
 
-    //limiting velocity left and right
-    if (velocity[X] > maxVel) {
-        velocity[X] = maxVel;
+    createElement() {
+        this.element = document.createElement("div");
+        this.element.className = "platform";
+        this.element.style.position = "absolute";
+        this.element.style.backgroundColor = "#654321";
+        this.updateElementPosition();
+        document.getElementById("gameContainer").appendChild(this.element);
     }
-    else if (velocity[X] < -maxVel) {
-        velocity[X] = -maxVel;
+}
+
+class Enemy extends GameObject {
+    constructor(left, bottom, width, height, speed = 5) {
+        super(left, bottom, width, height);
+        this.speed = speed;
+        this.direction = 1;
+        this.createElement();
     }
+
+    createElement() {
+        this.element = document.createElement("div");
+        this.element.className = "enemy";
+        this.element.style.position = "absolute";
+        this.element.style.backgroundColor = "red";
+        this.updateElementPosition();
+        document.getElementById("gameContainer").appendChild(this.element);
+    }
+
+    move(worldWidth) {
+        if (this.left + this.width >= worldWidth || this.left <= 0) {
+            this.direction *= -1;
+        }
+        this.left += this.direction * this.speed;
+        this.right = this.left + this.width;
+        this.updateElementPosition();
+    }
+}
+
+class Camera {
+    constructor(followObject, container) {
+        this.follow = followObject;
+        this.container = container;
+        this.offsetX = 0;
+        this.updateScreenBounds();
+        window.addEventListener("resize", () => this.updateScreenBounds());
+    }
+
+    update() {
+        if (this.follow.left > this.screenFollowRight - this.offsetX) {
+            this.offsetX = this.follow.left - this.screenFollowRight;
+        } else if (this.follow.left < this.screenFollowLeft - this.offsetX) {
+            this.offsetX = this.follow.left - this.screenFollowLeft;
+        }
+        this.container.style.transform = `translateX(${-this.offsetX}px)`;
+    }
+
+    updateScreenBounds() {
+        this.screenFollowRight = window.innerWidth * 0.75;
+        this.screenFollowLeft = window.innerWidth * 0.25;
+    }
+}
+
+class Game {
+    constructor() {
+        this.gameContainer = document.getElementById("gameContainer");
+        this.platforms = [];
+        this.enemies = [];
+        this.player = null;
+        this.camera = null;
+        this.worldWidth = 5000;
+        this.initialize();
+    }
+
+    initialize() {
+        // Create player
+        this.player = new Player(100, 200, 50, 50);
+
+        // Create platforms
+        this.platforms = [
+            new Platform(1100, 400, 600, 20),
+            new Platform(400, 200, 600, 20),
+            new Platform(2000, 200, 600, 20),
+            new Platform(5000, 200, 600, 20),
+            new Platform(400, 400, 600, 20)
+        ];
+
+        // Create enemies
+        this.enemies = [new Enemy(1000, 500, 80, 160)];
+
+        // Initialize camera
+        this.camera = new Camera(this.player, this.gameContainer);
+
+        // Set up event listeners
+        document.addEventListener("keydown", (e) => this.player.handleKeyDown(e));
+        document.addEventListener("keyup", (e) => this.player.handleKeyUp(e));
+
+        // Start game loop
+        this.gameLoop();
+    }
+
+    gameLoop() {
+        this.player.updatePosition(this.platforms);
         
-    // update position
-    position[X] += velocity[X];
-    position[Y] += velocity[Y];
-    
-    collisionDetection();
-    moveEnemy();
+        this.enemies.forEach(enemy => {
+            enemy.move(this.worldWidth);
+            this.checkPlayerEnemyCollision(enemy);
+        });
 
-    updateScreenBounds();
-
-    
-    
-    // update the position of the box
-    box.style.left = intToPx(position[X]);
-    box.style.bottom = intToPx(position[Y]);
-
-    requestAnimationFrame(updatePosition); 
-}
-
-function collisionDetection() {
-    // check if the player is on the ground
-    if (position[Y] <= ground) {
-        position[Y] = ground; // set the position to the ground
-        velocity[Y] = 0;
-        numJumps = 0;
+        this.camera.update();
+        requestAnimationFrame(() => this.gameLoop());
     }
 
-
-    checkUnderneath();
-
-    // check if the player is at the edge of the screen
-    if (position[X] >= 5000 - box.offsetWidth) {
-        position[X] = 5000 - box.offsetWidth;
-        velocity[X] = 0;
-        numJumps = 0;
-        // platform.left = intToPx(platform.left - velocity[X]);
-    }
-    else if (position[X] <= 0) {
-        position[X] = 0;
-        velocity[X] = 0;
-        numJumps = 0;
-    }
-}
-
-function checkUnderneath() {
-    ground = 0; 
-    isUnderneath = true;
-
-    platforms.forEach(platform => {
-        if (position[Y] >= platform.top && position[X] + box.offsetWidth > platform.left && position[X] < platform.left + platform.width) { 
-            ground = platform.top;
-            isUnderneath = false;
-        }
-    });
-}
-
-
-function intToPx(num) { return (num + "px");}
-
-function pxToInt(px) {return parseInt(px.replace("px", ""));}
-
-function platformConstructor(left, bottom, width, height) {
-    const platformDiv = document.createElement("div");
-    platformDiv.className = "platform";
-    platformDiv.style.position = "absolute";
-    platformDiv.style.left = intToPx(left);
-    platformDiv.style.bottom = intToPx(bottom);
-    platformDiv.style.width = intToPx(width);
-    platformDiv.style.height = intToPx(height);
-
-    const platform = {
-        left: left,
-        bottom: bottom,
-        width: width,
-        height: height,
-        top: bottom + height
-    };
-
-    platforms.push(platform);
-    gameContainer.appendChild(platformDiv);
-}
-
-function moveEnemy() {
-    enemies.forEach(enemy => {
-        // Check if the enemy reaches the edge of the platform or screen
-        if (enemy.left + enemy.width >= 5000 || enemy.left <= 0) {
-            enemy.direction *= -1; // Reverse direction when the enemy hits an edge
-        }
-
-        // Move the enemy in the current direction
-        enemy.left += enemy.direction * enemy.speed;
-        enemy.div.style.left = intToPx(enemy.left); // Use the stored div here
-    });
-    checkPlayerEnemyCollision();
-}
-
-function enemyConstructor(left, bottom, width, height) {
-    const enemyDiv = document.createElement("div");
-    enemyDiv.className = "enemy";
-    enemyDiv.style.position = "absolute";
-    enemyDiv.style.left = intToPx(left);
-    enemyDiv.style.bottom = intToPx(bottom);
-    enemyDiv.style.width = intToPx(width);
-    enemyDiv.style.height = intToPx(height);
-    enemyDiv.style.backgroundColor = "red"; // For testing purposes
-
-    const enemy = {
-        left: left,
-        bottom: bottom,
-        width: width,
-        height: height,
-        top: bottom + height,
-        direction: 1, // 1 for right, -1 for left
-        speed: 5, // enemy movement speed
-        div: enemyDiv // Store the enemy div reference for later use
-    };
-
-    enemies.push(enemy);
-    gameContainer.appendChild(enemyDiv);
-}
-
-
-// -Make enemy's walls the end of platforms!
-// -Fix line 222 to be just for a certain pixel range instead of platforms (for now)
-// -Make enemy collision with player!
-
-
-function checkPlayerEnemyCollision() {
-    enemies.forEach(enemy => {
-        if (position[X] < enemy.left + enemy.width && position[X] + box.offsetWidth > enemy.left && position[Y] < enemy.bottom + enemy.height && position[Y] + box.offsetHeight > enemy.bottom) {
-            // Handle collision, e.g., game over or reduce player health
+    checkPlayerEnemyCollision(enemy) {
+        if (this.player.collidesWith(enemy)) {
             console.log("Player collided with enemy!");
+            box.style.backgroundColor = "red";
         }
-    });
-}
-
-function updateScreenBounds() {
-    screenFollowRight =  window.innerWidth * 0.75;
-    screenFollowLeft =  window.innerWidth * 0.25;
-    
-    if (position[X] > screenFollowRight) {
-        cameraOffsetX = -(position[X] - screenFollowRight);
-        if (keys_pressed.left) {
-            
-        }
-    } 
-    else if (position[X] < screenFollowLeft) {
-        cameraOffsetX = -(position[X] - screenFollowLeft);
-    }
-
-    // **Apply the camera offset correctly**
-    gameContainer.style.transform = `translateX(${cameraOffsetX}px)`;
-}
-
-window.addEventListener("resize", updateScreenBounds);
-
-
-function playerAnimate (state) {
-    switch(state) {
-        case "crouch":
-            box.style.backgroundImage = URL('tileset_1');
-            break;
-        case "jump":
-            break;
-        case "attack" :
-            break;
     }
 }
+
+// Start the game when the page loads
+window.onload = () => new Game();
