@@ -227,6 +227,7 @@ function moveEnemy() {
         enemy.left += enemy.direction * enemy.speed;
         enemy.div.style.left = intToPx(enemy.left); // Use the stored div here
     });
+    checkPlayerEnemyCollision();
 }
 
 function enemyConstructor(left, bottom, width, height) {
@@ -255,6 +256,10 @@ function enemyConstructor(left, bottom, width, height) {
 }
 
 
+// -Make enemy's walls the end of platforms!
+// -Fix line 222 to be just for a certain pixel range instead of platforms (for now)
+// -Make enemy collision with player!
+
 
 function checkPlayerEnemyCollision() {
     enemies.forEach(enemy => {
@@ -281,7 +286,6 @@ function updateScreenBounds() {
 
     // **Apply the camera offset correctly**
     gameContainer.style.transform = `translateX(${cameraOffsetX}px)`;
-    console.log( cameraOffsetX);
 }
 
 window.addEventListener("resize", updateScreenBounds);
