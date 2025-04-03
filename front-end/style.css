@@ -22,6 +22,15 @@ body {
  box-shadow: 0px 4px 10px #202020;
 }
 
+.enemy {
+    position: absolute;
+    width: 80px;
+    height: 160px;
+    background-color: #202020;
+    bottom: 0px;
+    left: 100px; /* Adjust as needed */
+}
+
 .platform {
     position: absolute;
     width: 20%;
