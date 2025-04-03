@@ -7,7 +7,6 @@ const X = 0;
 const Y = 1;
 
 var platforms  = []; // array of platforms
-var enemies = []; // array of enemies
 var ground = 0; // the height of the ground
 var walls = 0; // array of walls
 
@@ -36,9 +35,6 @@ var keys_pressed = {
     up: false,
     down: false
 }
-
-
-updatePosition();
 
 document.addEventListener("keydown", function (event) {
     
@@ -98,61 +94,69 @@ document.addEventListener("keyup", function (event) {
 });
 
 
+class player {
+    constructor () {
+        
+    }
+    updatePosition () {
+        // left and right moevement
+        if (keys_pressed.left) {
+            velocity[X] -= accel;
+        }
+        else if (keys_pressed.right) {
+            velocity[X] += accel;
+        }
+    
+        //up and down movement
+        if (keys_pressed.down) {
+            velocity[Y] -= accel;
+        }
+        else if (!keys_pressed.up) {
+            velocity[Y] += gravity;
+        }
+    
+        // apply gravity/friction when no keys are pressed
+        if (!keys_pressed.left && !keys_pressed.right) {
+            velocity[X] *= friction;
+        }
+    
+        //limiting velocity left and right
+        if (velocity[X] > maxVel) {
+            velocity[X] = maxVel;
+        }
+        else if (velocity[X] < -maxVel) {
+            velocity[X] = -maxVel;
+        }
+            
+        // update position
+        position[X] += velocity[X];
+        position[Y] += velocity[Y];
+        
+        collisionDetection();
+        moveEnemy(enemies.platformNum);
+    
+        updateScreenBounds();
+    
+        
+        
+        // update the position of the box
+        box.style.left = intToPx(position[X]);
+        box.style.bottom = intToPx(position[Y]);
+    
+        requestAnimationFrame(updatePosition); 
+    }
+    
+}
+
+updatePosition();
+
+
 platformConstructor(1100, 400, 600, 20);
 platformConstructor(400, 200, 600, 20);
 platformConstructor(2000, 200, 600, 20);
 platformConstructor(5000, 200, 600, 20);
 
-enemyConstructor(1000, 500, 80, 160);
-
-function updatePosition () {
-    // left and right moevement
-    if (keys_pressed.left) {
-        velocity[X] -= accel;
-    }
-    else if (keys_pressed.right) {
-        velocity[X] += accel;
-    }
-
-    //up and down movement
-    if (keys_pressed.down) {
-        velocity[Y] -= accel;
-    }
-    else if (!keys_pressed.up) {
-        velocity[Y] += gravity;
-    }
-
-    // apply gravity/friction when no keys are pressed
-    if (!keys_pressed.left && !keys_pressed.right) {
-        velocity[X] *= friction;
-    }
-
-    //limiting velocity left and right
-    if (velocity[X] > maxVel) {
-        velocity[X] = maxVel;
-    }
-    else if (velocity[X] < -maxVel) {
-        velocity[X] = -maxVel;
-    }
-        
-    // update position
-    position[X] += velocity[X];
-    position[Y] += velocity[Y];
-    
-    collisionDetection();
-    moveEnemy();
-
-    updateScreenBounds();
-
-    
-    
-    // update the position of the box
-    box.style.left = intToPx(position[X]);
-    box.style.bottom = intToPx(position[Y]);
-
-    requestAnimationFrame(updatePosition); 
-}
-
+ 
 function collisionDetection() {
     // check if the player is on the ground
     if (position[Y] <= ground) {
@@ -216,44 +220,6 @@ function platformConstructor(left, bottom, width, height) {
     gameContainer.appendChild(platformDiv);
 }
 
-function moveEnemy() {
-    enemies.forEach(enemy => {
-        // Check if the enemy reaches the edge of the platform or screen
-        if (enemy.left + enemy.width >= 5000 || enemy.left <= 0) {
-            enemy.direction *= -1; // Reverse direction when the enemy hits an edge
-        }
-
-        // Move the enemy in the current direction
-        enemy.left += enemy.direction * enemy.speed;
-        enemy.div.style.left = intToPx(enemy.left); // Use the stored div here
-    });
-    checkPlayerEnemyCollision();
-}
-
-function enemyConstructor(left, bottom, width, height) {
-    const enemyDiv = document.createElement("div");
-    enemyDiv.className = "enemy";
-    enemyDiv.style.position = "absolute";
-    enemyDiv.style.left = intToPx(left);
-    enemyDiv.style.bottom = intToPx(bottom);
-    enemyDiv.style.width = intToPx(width);
-    enemyDiv.style.height = intToPx(height);
-    enemyDiv.style.backgroundColor = "red"; // For testing purposes
-
-    const enemy = {
-        left: left,
-        bottom: bottom,
-        width: width,
-        height: height,
-        top: bottom + height,
-        direction: 1, // 1 for right, -1 for left
-        speed: 5, // enemy movement speed
-        div: enemyDiv // Store the enemy div reference for later use
-    };
-
-    enemies.push(enemy);
-    gameContainer.appendChild(enemyDiv);
-}
 
 
 // -Make enemy's walls the end of platforms!
