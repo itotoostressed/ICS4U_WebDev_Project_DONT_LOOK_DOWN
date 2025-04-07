@@ -1,0 +1,10 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-repeat: repeat-x;
+    background-image: url('test-background.png');
+    background-size: 100% 100%;
+    overflow: hidden;
+}
+
+/* Remove all other CSS rules as Phaser manages its own elements */
