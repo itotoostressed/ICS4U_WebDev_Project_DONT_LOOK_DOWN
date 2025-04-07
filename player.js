@@ -58,7 +58,8 @@ class Player extends GameObject {
         this.isCrouching = false;
         this.isAttacking = false;
         this.attackCooldown = 0;
-        this.attackRange = 100;
+        this.attackRange = 1000;
+        this.direction = 1;
         this.keysPressed = {
             left: false,
             right: false,
@@ -87,8 +88,10 @@ class Player extends GameObject {
         // Horizontal movement
         if (this.keysPressed.left) {
             this.velocity[X] -= ACCEL;
+            this.direction = -1;
         } else if (this.keysPressed.right) {
             this.velocity[X] += ACCEL;
+            this.direction = 1;
         }
 
         // Vertical movement
@@ -121,6 +124,22 @@ class Player extends GameObject {
         // Update collision detection
         this.collisionDetection(platforms);
         this.updateElementPosition();
+    }
+
+    animate(frame, state, dir, aFrame) {
+
+
+        switch(state) {
+            case "walk":
+                this.element.style.backgroundImage = `url('assets/characters/${frame}.png')`;
+                break;
+            case "jump":
+                this.element.style.backgroundImage = `url('assets/characters/${frame}.png')`;
+                break;
+            case "attack":
+                this.element.style.backgroundImage = `url('assets/characters/${frame}.png')`;
+                break;
+        }
     }
 
     collisionDetection(platforms) {
@@ -175,7 +194,7 @@ class Player extends GameObject {
                 break;
             case "e":
                 if (this.attack()) {
-                    game.checkAttackHit(this.keysPressed.left ? -1 : 1);
+                    game.checkAttackHit(this.direction);
                 }
                 break;
         }
@@ -217,9 +236,10 @@ class Platform extends GameObject {
 }
 
 class Enemy extends GameObject {
-    constructor(left, bottom, width, height, speed = 5) {
+    constructor(left, bottom, width, height, speed = 5, platform = null) {
         super(left, bottom, width, height);
         this.speed = speed;
+        this.platform = platform;
         this.direction = 1;
         this.createElement();
     }
@@ -233,10 +253,19 @@ class Enemy extends GameObject {
         document.getElementById("gameContainer").appendChild(this.element);
     }
 
-    move(worldWidth) {
-        if (this.left + this.width >= worldWidth || this.left <= 0) {
-            this.direction *= -1;
+    move() {
+        if (this.platform) {
+            // Move within platform bounds
+            if (this.left + this.width >= this.platform.right || this.left <= this.platform.left) {
+                this.direction *= -1;
+            }
+        } else {
+            // Fallback: move within world bounds
+            if (this.left + this.width >= game.worldWidth || this.left <= 0) {
+                this.direction *= -1;
+            }
         }
+        
         this.left += this.direction * this.speed;
         this.right = this.left + this.width;
         this.updateElementPosition();
@@ -288,45 +317,72 @@ class Game {
 
     initialize() {
         // Create player
-        this.player = new Player(100, 200, 50, 50);
-
+        this.player = new Player(100, 200, 100, 100);
+    
         // Create platforms
-        this.platforms = [
-            new Platform(1100, 400, 600, 20),
-            new Platform(400, 200, 600, 20),
-            new Platform(2000, 200, 600, 20),
-            new Platform(5000, 200, 600, 20),
-            new Platform(400, 400, 600, 20),
-            new Platform(400, 600, 600, 20),
-            new Platform(400, 800, 600, 20),
-            new Platform(400, 1000, 600, 20),
-            new Platform(400, 1200, 600, 20),
-            new Platform(400, 1400, 600, 20),
-            new Platform(400, 1600, 600, 20),
-            new Platform(400, 1800, 600, 20),
-            new Platform(400, 2000, 600, 20),
-            new Platform(400, 2200, 600, 20),
-            new Platform(400, 2400, 600, 20),
-            new Platform(400, 2600, 600, 20),
-            new Platform(400, 2800, 600, 20),
-            new Platform(400, 3000, 600, 20),
-            new Platform(400, 3200, 600, 20),
-        ];
-
-        // Create enemies
-        this.enemies = [new Enemy(this.platforms[1].left, this.platforms[1].top, 80, 160)];
-
+        this.platforms = [];
+        const platformCount = 20; // Number of platforms to generate
+        const minWidth = 1100;
+        const maxWidth = 1500;
+        const minHeight = 20;
+        const verticalSpacing = 250; // Vertical spacing between platform layers
+    
+        // Create ground platform
+        this.platforms.push(new Platform(0, 0, this.worldWidth, 20));
+    
+        // Generate random platforms
+        let lastX = 0;
+        let lastY = 0;
+        
+        for (let i = 0; i < platformCount; i++) {
+            // Random width and height
+            const width = Math.floor(Math.random() * (maxWidth - minWidth + 1)) + minWidth;
+            const height = minHeight; // Keep height consistent or use random if you prefer
+            
+            // Random position with some constraints
+            let x = lastX + Math.random() * 300;
+            let y = lastY + verticalSpacing; 
+            
+            // Ensure platforms stay within world bounds
+            if (x + width > this.worldWidth) {
+                x = this.worldWidth - width - 50;
+            }
+            
+            // Create the platform
+            this.platforms.push(new Platform(x, y, width, height));
+            
+            // Update last positions for next platform
+            lastX = x;
+            lastY = y;
+            
+            // Random chance to create an enemy on this platform
+            if (Math.random() > 0.7) { // 30% chance
+                const enemyWidth = 80;
+                const enemyHeight = 160;
+                this.enemies.push(new Enemy(
+                    x + enemyWidth,
+                    y + height,
+                    enemyWidth,
+                    enemyHeight,
+                    5,
+                    this.platforms[this.platforms.length - 1] // Assign the platform to the enemy
+                ));
+            }
+        }
+    
+        // Create enemies (you can keep your original enemy creation or use the random one above)
+        // this.enemies = [new Enemy(this.platforms[1].left, this.platforms[1].top, 80, 160)];
+    
         // Initialize camera
         this.camera = new Camera(this.player, this.gameContainer);
-
+    
         // Set up event listeners
         document.addEventListener("keydown", (e) => this.player.handleKeyDown(e));
         document.addEventListener("keyup", (e) => this.player.handleKeyUp(e));
-
+    
         // Start game loop
         this.gameLoop();
     }
-
     checkAttackHit(direction) {
         const attackRange = this.player.attackRange;
         const attackHitbox = {
@@ -372,7 +428,7 @@ class Game {
     gameLoop() {
         this.player.updatePosition(this.platforms);
         this.enemies.forEach(enemy => {
-            enemy.move(this.worldWidth);
+            enemy.move(Platform);
             this.checkPlayerEnemyCollision(enemy);
         });
         this.camera.update();
