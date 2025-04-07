@@ -8,6 +8,8 @@ const GRAVITY = -0.7;
 const JUMP_FORCE = 15;
 const MAX_JUMP = 2;
 
+let charSheetPos;
+
 class GameObject {
     constructor(left, bottom, width, height) {
         this.left = left;
@@ -55,11 +57,25 @@ class Player extends GameObject {
         this.ground = 0;
         this.numJumps = 0;
         this.isJumping = false;
-        this.isCrouching = false;
         this.isAttacking = false;
         this.attackCooldown = 0;
         this.attackRange = 1000;
         this.direction = 1;
+        const SPRITE_FRAMES = { //adjust as needed
+            idle: [[0, 0]], //x and y positions for idle frames
+            walk: [
+                [0, 150],   // Frame 0
+                [100, 150], // Frame 1
+                [200, 150], // Frame 2
+                [300, 150], // Frame 3
+            ],
+            jump: [[0, 300]],
+            attack: [
+                [0, 450],   // Frame 0
+                [100, 450], // Frame 1
+            ],
+            // Add other states...
+        };
         this.keysPressed = {
             left: false,
             right: false,
@@ -86,9 +102,14 @@ class Player extends GameObject {
 
     updatePosition(platforms) {
         // Horizontal movement
+        let xPos; //positions for the sprite sheet
+        let yPos;
         if (this.keysPressed.left) {
             this.velocity[X] -= ACCEL;
             this.direction = -1;
+            charSheetPos = animate(this, "walk", "left", 0);
+            [xPos, yPos] = charSheetPos;
+            this.element.style.backgroundPosition = `${xPos}px ${yPos}px`;
         } else if (this.keysPressed.right) {
             this.velocity[X] += ACCEL;
             this.direction = 1;
@@ -126,20 +147,18 @@ class Player extends GameObject {
         this.updateElementPosition();
     }
 
-    animate(frame, state, dir, aFrame) {
-
-
-        switch(state) {
-            case "walk":
-                this.element.style.backgroundImage = `url('assets/characters/${frame}.png')`;
-                break;
-            case "jump":
-                this.element.style.backgroundImage = `url('assets/characters/${frame}.png')`;
-                break;
-            case "attack":
-                this.element.style.backgroundImage = `url('assets/characters/${frame}.png')`;
-                break;
+    animate(state, dir, frame = 0) {
+        // Get pre-defined coordinates
+        const [xPos, yPos] = SPRITE_FRAMES[state][frame];
+        
+        // Handle direction
+        if (dir === "left") {
+            this.element.style.transform = "scaleX(-1)";
+        } else {
+            this.element.style.transform = "scaleX(1)";
         }
+        
+        return [xPos, yPos];
     }
 
     collisionDetection(platforms) {
