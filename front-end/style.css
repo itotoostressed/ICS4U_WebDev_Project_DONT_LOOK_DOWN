@@ -20,7 +20,6 @@ bottom: 0px;
 left: 0px;   
 box-shadow: 0px 4px 10px #202020;
 background-repeat: no-repeat;
-background-size:auto;
 background-image: url('player.png');
 transform-origin: center;
 }
