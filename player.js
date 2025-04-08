@@ -127,7 +127,7 @@ class Player extends GameObject {
         if (this.keysPressed.left) {
             this.velocity[X] -= ACCEL;
             this.direction = -1;
-            if (frameNum % 5 === 0) { 
+            if (frameNum % 10 === 0) { 
                 console.log(frameNum);
                 charSheetPos = this.animate("walk", "left");
                 [xPos, yPos] = charSheetPos;
@@ -138,7 +138,7 @@ class Player extends GameObject {
             this.direction = 1;
         }
 
-        // Vertical movement
+        // Vertical movemen
         if (this.keysPressed.down) {
             this.velocity[Y] -= ACCEL;
         } else if (!this.keysPressed.up) {
@@ -387,7 +387,7 @@ class Game {
             const height = minHeight; // Keep height consistent or use random if you prefer
             
             // Random position with some constraints
-            let x = lastX + Math.random() * 300;
+            let x = Math.random() * 1000;
             let y = lastY + verticalSpacing; 
             
             // Ensure platforms stay within world bounds
@@ -403,11 +403,11 @@ class Game {
             lastY = y;
             
             // Random chance to create an enemy on this platform
-            if (Math.random() > 0.7) { // 30% chance
+            if (Math.random() > 0.4) { 
                 const enemyWidth = 80;
                 const enemyHeight = 160;
                 this.enemies.push(new Enemy(
-                    x + enemyWidth,
+                    x + enemyWidth + Math.random() * (width - enemyWidth),
                     y + height,
                     enemyWidth,
                     enemyHeight,
