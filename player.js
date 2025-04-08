@@ -60,8 +60,8 @@ class Player extends GameObject {
         this.isJumping = false;
         this.isAttacking = false;
         this.attackCooldown = 0;
-        this.attackRange = 1000;
-        this.direction = 1;
+        this.attackRange = 100;
+        this.direction = "";
         this.SPRITE_FRAMES = { //adjust as needed
             idle: [[0, 0]], //x and y positions for idle frames
             "walk": {
@@ -126,19 +126,20 @@ class Player extends GameObject {
         
         if (this.keysPressed.left) {
             this.velocity[X] -= ACCEL;
-            this.direction = -1;
-            if (frameNum % 10 === 0) { 
-                console.log(frameNum);
-                charSheetPos = this.animate("walk", "left");
-                [xPos, yPos] = charSheetPos;
-                this.element.style.backgroundPosition = `${xPos}px ${yPos}px`;
-            } 
+            this.direction = "left";
         } else if (this.keysPressed.right) {
             this.velocity[X] += ACCEL;
-            this.direction = 1;
+            this.direction = "right";
         }
+        if (frameNum % 5 === 0) { 
+            console.log(frameNum);
+            charSheetPos = this.animate("walk", this.direction);
+            
+            [xPos, yPos] = charSheetPos;
+            this.element.style.backgroundPosition = `${xPos}px ${yPos}px`;
+        } 
 
-        // Vertical movemen
+        // Vertical movement
         if (this.keysPressed.down) {
             this.velocity[Y] -= ACCEL;
         } else if (!this.keysPressed.up) {
@@ -176,17 +177,37 @@ class Player extends GameObject {
         //input frames as "frames" because frames: is not actually a variable, it is a string. frames: is equivalent to "frames".
         //currentFrame is a variable that is used to get the current frame of the animation. Therefore it is ok.
         //if we setup something like let frames = "frames" then we would have to use frames["currentFrame"] instead of currentFrame.
+
+        const animation = this.SPRITE_FRAMES[state];
+        
+        // Get current frame
+        const currentFrame = animation.currentFrame;
+        const [xPos, yPos] = animation.frames[currentFrame];
+        
+        // Update to next frame (loop if needed)
+        animation.currentFrame = (currentFrame + 1) % animation.frames.length;
+        
+        // Handle direction
+        if (dir === "left") {
+            this.element.style.transform = "scaleX(-1)";
+        } else if (dir === "right"){
+            this.element.style.transform = "scaleX(-1)";
+        }
+        
+        return [xPos, yPos];
+        /*
         const currentFrame = this.SPRITE_FRAMES[state]["currentFrame"]
         const [xPos, yPos] = this.SPRITE_FRAMES[state]["frames"][currentFrame];
 
         // Handle direction
         if (dir === "left") {
             this.element.style.transform = "scaleX(-1)";
-        } else {
+        }
+        else {
             this.element.style.transform = "scaleX(1)";
         }
         
-        return [xPos, yPos];
+        return [xPos, yPos];*/
     }
 
     collisionDetection(platforms) {
@@ -387,7 +408,7 @@ class Game {
             const height = minHeight; // Keep height consistent or use random if you prefer
             
             // Random position with some constraints
-            let x = Math.random() * 1000;
+            let x = lastX + Math.random() * 300;
             let y = lastY + verticalSpacing; 
             
             // Ensure platforms stay within world bounds
@@ -403,11 +424,11 @@ class Game {
             lastY = y;
             
             // Random chance to create an enemy on this platform
-            if (Math.random() > 0.4) { 
+            if (Math.random() > 0.7) { // 30% chance
                 const enemyWidth = 80;
                 const enemyHeight = 160;
                 this.enemies.push(new Enemy(
-                    x + enemyWidth + Math.random() * (width - enemyWidth),
+                    x + enemyWidth,
                     y + height,
                     enemyWidth,
                     enemyHeight,
