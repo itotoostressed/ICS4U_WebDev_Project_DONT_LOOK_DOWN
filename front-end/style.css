@@ -12,14 +12,17 @@ body {
 }
 
 #box {
- position: absolute;
- width: 80px;
- height: 160px;
- display:inline-block;
- bottom: 0px;
- left: 0px;   
- box-shadow: 0px 4px 10px #202020;
- background-image: url('char1\ assets.png')
+position: absolute;
+width: 100px;
+height: 160px;
+display:inline-block;
+bottom: 0px;
+left: 0px;   
+box-shadow: 0px 4px 10px #202020;
+background-repeat: no-repeat;
+background-size:auto;
+background-image: url('player.png');
+transform-origin: center;
 }
 
 .enemy {
