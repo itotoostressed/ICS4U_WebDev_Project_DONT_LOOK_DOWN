@@ -1,3 +1,18 @@
+/*
+NOTES!
+Please create the following:
+-Ladder
+-Tall & Short enemies (rename current enemies to tall enemies or whatever)
+-Lava (Rising or y++ every update or something)
+-Death detection by lava
+-Death screen
+-Main Menu
+-Login & Data Storage
+
+Please fix: 
+-Lighting (Ask yavuz how he got his background to be dark.)
+-Animations (ask Matt about how it no work, Note: you tested animations and "walk" frame 3 doesn't appear?)
+*/
 // Constants
 const X = 0;
 const Y = 1;
