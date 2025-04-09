@@ -54,6 +54,8 @@ class Player extends GameObject {
     constructor(left, bottom, width, height) {
         super(left, bottom, width, height);
         this.element = document.getElementById("box");
+        this.element.style.transformOrigin = "center"; // If you animate transforms
+        this.element.style.willChange = "transform";   // Optimize for animation
         this.velocity = [0, 0];
         this.ground = 0;
         this.numJumps = 0;
@@ -61,43 +63,35 @@ class Player extends GameObject {
         this.isAttacking = false;
         this.attackCooldown = 0;
         this.attackRange = 1000;
+        this.animationSpeed = 5;
+        this.animationCounter = 0;
+        this.isAlive = true; //Might not need this.
         this.direction = 1;
-        this.SPRITE_FRAMES = { //adjust as needed
-            idle: [[0, 0]], //x and y positions for idle frames
-            "walk": {
-                currentFrame: 0,
-                "frames": [
-                    [0, 150],   // Frame 0
-                    [100, 150], // Frame 1
-                    [200, 150], // Frame 2
-                    [300, 150] // Frame 3
-                ]
-        },
-            jump: [[0, 300]],
-            attack: [
-                [0, 450],   // Frame 0
-                [100, 450], // Frame 1
-            ],
-            // Add other states...
-        };
-
-        this.SPRITE_FRAMES_2 = {
+        this.state = "idle"; // Default state
+        this.SPRITE_FRAMES = {
+            idle: [[0, 20]],  // Matches CSS's -20px (negative in CSS = positive in JS)
             walk: {
                 currentFrame: 0,
-                frames: [ 
-                    [0, 150],   // Frame 0
-                    [100, 150], // Frame 1
-                    [200, 150], // Frame 2
-                    [300, 150], // Frame 3
+                frames: [
+                    [5, 474],    // Frame 0
+                    [178, 470],   // Frame 1
+                    [358, 466],   // Frame 2
+                    [531, 473]    // Frame 3
                 ]
-            }
-        }
+            },
+            jump: [[0, 320]],    // 300 + 20 offset
+            attack: [
+                [0, 470],       // 450 + 20 offset
+                [100, 470]
+            ]
+        };
         this.keysPressed = {
             left: false,
             right: false,
             up: false,
             down: false
         };
+
     }
 
     attack() {
@@ -106,7 +100,7 @@ class Player extends GameObject {
             this.attackCooldown = 30;
             
             // Visual feedback
-            this.element.style.boxShadow = "0 0 15px yellow";
+            
             setTimeout(() => {
                 this.element.style.boxShadow = "0px 4px 10px #202020";
             }, 100);
@@ -126,19 +120,31 @@ class Player extends GameObject {
         
         if (this.keysPressed.left) {
             this.velocity[X] -= ACCEL;
-            this.direction = -1;
-            if (frameNum % 10 === 0) { 
-                console.log(frameNum);
-                charSheetPos = this.animate("walk", "left");
-                [xPos, yPos] = charSheetPos;
-                this.element.style.backgroundPosition = `${xPos}px ${yPos}px`;
-            } 
+            this.direction = "left";
+            this.state = "walk";
         } else if (this.keysPressed.right) {
             this.velocity[X] += ACCEL;
-            this.direction = 1;
+            this.direction = "right";
+        }
+        
+        if (this.isAttacking) {
+            this.state = "attack";
+        } else if (this.isJumping) {
+            this.state = "jump"; 
+        } else if (this.keysPressed.left || this.keysPressed.right) {
+            this.state = "walk";
+        } else {
+            this.state = "idle";
         }
 
-        // Vertical movemen
+        this.animationCounter++;
+        if (this.animationCounter % this.animationSpeed === 0) {
+            charSheetPos = this.animate(this.state, this.direction);
+            const [xPos, yPos] = charSheetPos;
+            this.element.style.backgroundPosition = `${xPos}px -${yPos}px`;
+        }
+
+        // Vertical movement
         if (this.keysPressed.down) {
             this.velocity[Y] -= ACCEL;
         } else if (!this.keysPressed.up) {
@@ -171,18 +177,29 @@ class Player extends GameObject {
     }
 
     animate(state, dir) {
-        // Get pre-defined coordinates
-
-        //input frames as "frames" because frames: is not actually a variable, it is a string. frames: is equivalent to "frames".
-        //currentFrame is a variable that is used to get the current frame of the animation. Therefore it is ok.
-        //if we setup something like let frames = "frames" then we would have to use frames["currentFrame"] instead of currentFrame.
-        const currentFrame = this.SPRITE_FRAMES[state]["currentFrame"]
-        const [xPos, yPos] = this.SPRITE_FRAMES[state]["frames"][currentFrame];
-
+        // Safeguard against missing states
+        if (!this.SPRITE_FRAMES[state]) {
+            console.error(`Missing animation state: ${state}`);
+            return [0, 0]; // Changed to [0, 0] as default
+        }
+    
+        const animation = this.SPRITE_FRAMES[state];
+        
+        // Handle both array and object formats
+        const frames = Array.isArray(animation) ? animation : animation.frames;
+        let currentFrame = Array.isArray(animation) ? 0 : animation.currentFrame;
+        
+        const [xPos, yPos] = frames[currentFrame];
+        
+        // Update frame if animated state
+        if (!Array.isArray(animation)) {
+            animation.currentFrame = (currentFrame + 1) % frames.length;
+        }
+    
         // Handle direction
         if (dir === "left") {
             this.element.style.transform = "scaleX(-1)";
-        } else {
+        } else if (dir === "right") {
             this.element.style.transform = "scaleX(1)";
         }
         
@@ -191,11 +208,13 @@ class Player extends GameObject {
 
     collisionDetection(platforms) {
         // Check ground collision
-        if (this.bottom <= this.ground) {
-            this.bottom = this.ground;
-            this.velocity[Y] = 0;
-            this.numJumps = 0;
-        }
+        // In collisionDetection():
+    if (this.bottom <= this.ground) {
+        this.bottom = this.ground;
+        this.velocity[Y] = 0;
+        this.numJumps = 0;
+        this.isJumping = false; // Reset jump state when landed
+    }
 
         // Check platform collisions
         this.checkUnderneath(platforms);
@@ -206,7 +225,29 @@ class Player extends GameObject {
             this.velocity[X] = 0;
         }
     }
+        // Get pre-defined coordinates
 
+        //input frames as "frames" because frames: is not actually a variable, it is a string. frames: is equivalent to "frames".
+        //currentFrame is a variable that is used to get the current frame of the animation. Therefore it is ok.
+        //if we setup something like let frames = "frames" then we would have to use frames["currentFrame"] instead of currentFrame.
+        /*
+        const animation = this.SPRITE_FRAMES[state];
+        // Get current frame
+        const currentFrame = animation.currentFrame;
+        const [xPos, yPos] = animation.frames[currentFrame];
+        console.log("Attack!" + dir);
+        
+        // Update to next frame (loop if needed)
+        animation.currentFrame = (currentFrame + 1) % animation.frames.length;
+        
+        // Handle direction
+        if (dir === "left") {
+            this.element.style.transform = "scaleX(-1)";
+        } else if (dir === "right"){
+            this.element.style.transform = "scaleX(1)";
+        }
+        
+        return [xPos, yPos];*/
     checkUnderneath(platforms) {
         this.ground = 0;
         platforms.forEach(platform => {
@@ -269,6 +310,7 @@ class Player extends GameObject {
 class Platform extends GameObject {
     constructor(left, bottom, width, height) {
         super(left, bottom, width, height);
+        this.isAlive = true;
         this.createElement();
     }
 
@@ -407,7 +449,7 @@ class Game {
                 const enemyWidth = 80;
                 const enemyHeight = 160;
                 this.enemies.push(new Enemy(
-                    x + enemyWidth + Math.random() * (width - enemyWidth),
+                    x + Math.random() * (width - enemyWidth),
                     y + height,
                     enemyWidth,
                     enemyHeight,
@@ -431,20 +473,26 @@ class Game {
         this.gameLoop();
     }
     checkAttackHit(direction) {
-        const attackRange = this.player.attackRange;
+        const playerMidX = this.player.left + (this.player.width / 2);
+        
         const attackHitbox = {
-            left: direction > 0 ? this.player.right : this.player.left - attackRange,
-            right: direction > 0 ? this.player.right + attackRange : this.player.left,
-            bottom: this.player.bottom,
-            top: this.player.top
+            left: direction === "left" ? this.player.left - this.player.attackRange : playerMidX,
+            right: direction === "right" ? this.player.right + this.player.attackRange : playerMidX,
+            top: this.player.top , // Slightly above player
+            bottom: this.player.bottom  // Slightly below player
         };
-
-        // Visual feedback
+    
+        // Debug visualization
+        console.log("Attack hitbox:", attackHitbox);
         this.showAttackRange(attackHitbox);
-
+    
         // Check enemy collisions
         this.enemies.forEach(enemy => {
             if (this.checkHitboxCollision(attackHitbox, enemy)) {
+                console.log("Enemy hit!");
+                enemy.isAlive = false;
+                console.log(enemy.isAlive);
+                this.gameContainer.removeChild(enemy.element);
                 enemy.element.style.backgroundColor = "purple";
                 setTimeout(() => {
                     enemy.element.style.backgroundColor = "red";
@@ -454,12 +502,23 @@ class Game {
     }
 
     showAttackRange(hitbox) {
-        const originalStyle = this.player.element.style.cssText;
+        // Store only modified properties
+        const original = {
+            width: this.player.element.style.width,
+            left: this.player.element.style.left,
+            opacity: this.player.element.style.opacity
+        };
+        
+        // Apply temporary attack styles
         this.player.element.style.width = `${hitbox.right - hitbox.left}px`;
         this.player.element.style.left = `${hitbox.left - this.camera.offsetX}px`;
         this.player.element.style.opacity = "0.7";
+        
+        // Restore originals
         setTimeout(() => {
-            this.player.element.style.cssText = originalStyle;
+            this.player.element.style.width = original.width;
+            this.player.element.style.left = original.left;
+            this.player.element.style.opacity = original.opacity;
         }, 100);
     }
 
