@@ -84,21 +84,36 @@ class Player extends GameObject {
         this.direction = 1;
         this.state = "idle"; // Default state
         this.SPRITE_FRAMES = {
-            idle: [[0, 20]],  // Matches CSS's -20px (negative in CSS = positive in JS)
+            idle: [[-10, 20]],  // Matches CSS's -20px (negative in CSS = positive in JS)
             walk: {
                 currentFrame: 0,
                 frames: [
-                    [5, 474],    // Frame 0
-                    [178, 470],   // Frame 1
-                    [358, 466],   // Frame 2
-                    [531, 473]    // Frame 3
+                    [-10, 474],    // Frame 0
+                    [-170, 470],   // Frame 1
+                    [-358, 466],   // Frame 2
+                    [-531, 473]    // Frame 3
                 ]
             },
-            jump: [[0, 320]],    // 300 + 20 offset
-            attack: [
-                [0, 470],       // 450 + 20 offset
-                [100, 470]
-            ]
+            jump: {
+                currentFrame: 0,
+                frames: [
+                    [0, 320],    // Frame 0
+                    [-178, 320],   // Frame 1
+                    [-358, 320],   // Frame 2
+                    [-531, 320]    // Frame 3
+                ]
+            },    // 300 + 20 offset
+            attack: {
+                currentFrame: 0,
+                frames: [
+                    [5, 168],    // Frame 0
+                    [-178, 168],   // Frame 1
+                    [-354, 150],   // Frame 2
+                    [-531, 170],
+                    [-708, 170],
+                    [-880, 170],    // Frame 3
+                ]
+            },
         };
         this.keysPressed = {
             left: false,
@@ -195,14 +210,17 @@ class Player extends GameObject {
         // Safeguard against missing states
         if (!this.SPRITE_FRAMES[state]) {
             console.error(`Missing animation state: ${state}`);
-            return [0, 0]; // Changed to [0, 0] as default
+            return [0, 20]; // Changed to [0, 20] as default
         }
+        
     
         const animation = this.SPRITE_FRAMES[state];
         
         // Handle both array and object formats
         const frames = Array.isArray(animation) ? animation : animation.frames;
         let currentFrame = Array.isArray(animation) ? 0 : animation.currentFrame;
+
+        console.log(currentFrame);
         
         const [xPos, yPos] = frames[currentFrame];
         
@@ -502,15 +520,17 @@ class Game {
         this.showAttackRange(attackHitbox);
     
         // Check enemy collisions
-        this.enemies.forEach(enemy => {
+        this.enemies.forEach((enemy, index) => {
             if (this.checkHitboxCollision(attackHitbox, enemy)) {
                 console.log("Enemy hit!");
-                enemy.isAlive = false;
-                console.log(enemy.isAlive);
-                this.gameContainer.removeChild(enemy.element);
+                enemy.health = 2;
                 enemy.element.style.backgroundColor = "purple";
+    
+                // Remove the enemy's DOM element after a short time
                 setTimeout(() => {
                     enemy.element.style.backgroundColor = "red";
+                    this.gameContainer.removeChild(enemy.element);
+                    this.enemies.splice(index, 1); // Remove enemy from the array
                 }, 200);
             }
         });
