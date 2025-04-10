@@ -1,40 +1,13 @@
 body {
     background-repeat: repeat;
-    background-image: url('dungBackground2.png');
+    background-image: url('dungBackground.png');
     background-repeat: repeat;
     overflow: hidden;
 }
 
-/* Add these new styles */
-#lighting-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 100;
-    background: radial-gradient(
-        circle at center,
-        rgba(0,0,0,0) 0%,
-        rgba(0,0,0,0.9) 70%,
-        rgba(0,0,0,1) 100%
-    );
-    mask-image: radial-gradient(
-        circle 200px at center,
-        rgba(0,0,0,1) 0%,
-        rgba(0,0,0,0) 70%
-    );
-    -webkit-mask-image: radial-gradient(
-        circle 200px at center,
-        rgba(0,0,0,1) 0%,
-        rgba(0,0,0,0) 70%
-    );
-}
-
 #gameContainer {
     position: absolute;
-    width: 3000px; 
+    width: 2000px; 
     height: 100vh; /* Full height */
     
 }
@@ -46,20 +19,41 @@ height: 160px;
 display:block;
 bottom: 0px;
 left: 0px;   
-box-shadow: 0px 4px 10px #202020;
 background-repeat: no-repeat;
 background-image: url('player.png');
-background-position: 0px -20px;
+background-position: 0px -10px;
 transform-origin: center;
+}
+
+.ladder {
+    position: absolute;
+    background-image: url('ladder.png');
+    width: 20px;
+    height: 580px;
+    background-color: #8B4513; /* Brown color for the ladder */
+    bottom: 0px; /* Adjust as needed */
+    left: 200px; /* Adjust as needed */
 }
 
 .enemy {
     position: absolute;
     width: 80px;
     height: 160px;
-    background-color: #202020;
+    background-color: #FF5E5E;
     bottom: 0px;
     left: 100px; /* Adjust as needed */
+}
+
+.lava {
+    position:absolute;
+    width: 100%;
+    height:3000px;
+    bottom: -3000px;
+    left: 0px;
+    z-index: 1;
+    background-image: url('lava.png');
+    background-repeat: repeat;
+    background-color: #7a0000;
 }
 
 .platform {
