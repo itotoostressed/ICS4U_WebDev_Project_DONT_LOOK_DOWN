@@ -3,16 +3,13 @@ NOTES!
 Please create the following:
 -Ladder
 -Tall & Short enemies (rename current enemies to tall enemies or whatever)
--Lava (Rising or y++ every update or something)
--Death detection by lava
--Death screen
 -Main Menu
 -Login & Data Storage
 
 Please fix: 
--Lighting (Ask yavuz how he got his background to be dark.)
--Animations (ask Matt about how it no work, Note: you tested animations and "walk" frame 3 doesn't appear?)
+-Death detection by lava
 */
+// Constants
 // Constants
 const X = 0;
 const Y = 1;
@@ -57,10 +54,10 @@ class GameObject {
 
     collidesWith(other) {
         return (
-            this.left < other.right &&
-            this.right > other.left &&
+            this.left + 20 < other.right &&
+            this.right - 25 > other.left &&
             this.bottom < other.top &&
-            this.top > other.bottom
+            this.top - 20> other.bottom
         );
     }
 }
@@ -69,8 +66,8 @@ class Player extends GameObject {
     constructor(left, bottom, width, height) {
         super(left, bottom, width, height);
         this.element = document.getElementById("box");
-        this.element.style.transformOrigin = "center"; // If you animate transforms
-        this.element.style.willChange = "transform";   // Optimize for animation
+        this.element.style.transformOrigin = "center";
+        this.element.style.willChange = "transform";
         this.velocity = [0, 0];
         this.ground = 0;
         this.numJumps = 0;
@@ -80,38 +77,37 @@ class Player extends GameObject {
         this.attackRange = 1000;
         this.animationSpeed = 5;
         this.animationCounter = 0;
-        this.isAlive = true; //Might not need this.
         this.direction = 1;
-        this.state = "idle"; // Default state
+        this.state = "idle";
         this.SPRITE_FRAMES = {
-            idle: [[-10, 20]],  // Matches CSS's -20px (negative in CSS = positive in JS)
+            idle: [[-10, 20]],
             walk: {
                 currentFrame: 0,
                 frames: [
-                    [-10, 474],    // Frame 0
-                    [-170, 470],   // Frame 1
-                    [-358, 466],   // Frame 2
-                    [-531, 473]    // Frame 3
+                    [-10, 474],
+                    [-170, 470],
+                    [-358, 466],
+                    [-531, 473]
                 ]
             },
             jump: {
                 currentFrame: 0,
                 frames: [
-                    [0, 320],    // Frame 0
-                    [-178, 320],   // Frame 1
-                    [-358, 320],   // Frame 2
-                    [-531, 320]    // Frame 3
+                    [0, 320],
+                    [-178, 320],
+                    [-358, 320],
+                    [-531, 320]
                 ]
-            },    // 300 + 20 offset
+            },
             attack: {
                 currentFrame: 0,
                 frames: [
-                    [5, 168],    // Frame 0
-                    [-178, 168],   // Frame 1
-                    [-354, 150],   // Frame 2
+                    [5, 168],
+                    [-178, 168],
+                    [-354, 150],
                     [-531, 170],
                     [-708, 170],
-                    [-880, 170],    // Frame 3
+                    [-880, 170]
                 ]
             },
         };
@@ -121,19 +117,12 @@ class Player extends GameObject {
             up: false,
             down: false
         };
-
     }
 
     attack() {
         if (this.attackCooldown <= 0) {
             this.isAttacking = true;
-            this.attackCooldown = 30;
-            
-            // Visual feedback
-            
-            setTimeout(() => {
-                this.element.style.boxShadow = "0px 4px 10px #202020";
-            }, 100);
+            this.attackCooldown = 30; // Cooldown period for attack
             
             return true;
         }
@@ -141,12 +130,8 @@ class Player extends GameObject {
     }
 
     updatePosition(platforms) {
-        // Horizontal movement
-        let xPos; //positions for the sprite sheet
-        let yPos;
-        
-        if (frameNum <200) {frameNum += 1;}
-        else {frameNum = 0;}
+        if (frameNum < 200) { frameNum += 1; }
+        else { frameNum = 0; }
         
         if (this.keysPressed.left) {
             this.velocity[X] -= ACCEL;
@@ -174,14 +159,12 @@ class Player extends GameObject {
             this.element.style.backgroundPosition = `${xPos}px -${yPos}px`;
         }
 
-        // Vertical movement
         if (this.keysPressed.down) {
             this.velocity[Y] -= ACCEL;
         } else if (!this.keysPressed.up) {
             this.velocity[Y] += GRAVITY;
         }
 
-        // Apply friction
         if (!this.keysPressed.left && !this.keysPressed.right) {
             this.velocity[X] *= FRICTION;
         }
@@ -192,44 +175,33 @@ class Player extends GameObject {
             this.isAttacking = false;
         }
 
-        // Limit velocity
         this.velocity[X] = Math.max(Math.min(this.velocity[X], MAX_VEL), -MAX_VEL);
 
-        // Update position
         this.left += this.velocity[X];
         this.bottom += this.velocity[Y];
         this.top = this.bottom + this.height;
-        this.right = this.left + this.width;        
+        this.right = this.left + this.width;
 
-        // Update collision detection
         this.collisionDetection(platforms);
         this.updateElementPosition();
     }
 
     animate(state, dir) {
-        // Safeguard against missing states
         if (!this.SPRITE_FRAMES[state]) {
             console.error(`Missing animation state: ${state}`);
-            return [0, 20]; // Changed to [0, 20] as default
+            return [0, 20];
         }
-        
     
         const animation = this.SPRITE_FRAMES[state];
-        
-        // Handle both array and object formats
         const frames = Array.isArray(animation) ? animation : animation.frames;
         let currentFrame = Array.isArray(animation) ? 0 : animation.currentFrame;
-
-        console.log(currentFrame);
         
         const [xPos, yPos] = frames[currentFrame];
         
-        // Update frame if animated state
         if (!Array.isArray(animation)) {
             animation.currentFrame = (currentFrame + 1) % frames.length;
         }
     
-        // Handle direction
         if (dir === "left") {
             this.element.style.transform = "scaleX(-1)";
         } else if (dir === "right") {
@@ -240,47 +212,21 @@ class Player extends GameObject {
     }
 
     collisionDetection(platforms) {
-        // Check ground collision
-        // In collisionDetection():
-    if (this.bottom <= this.ground) {
-        this.bottom = this.ground;
-        this.velocity[Y] = 0;
-        this.numJumps = 0;
-        this.isJumping = false; // Reset jump state when landed
-    }
+        if (this.bottom <= this.ground) {
+            this.bottom = this.ground;
+            this.velocity[Y] = 0;
+            this.numJumps = 0;
+            this.isJumping = false;
+        }
 
-        // Check platform collisions
         this.checkUnderneath(platforms);
 
-        // Screen boundaries
         if (this.left <= 0) {
             this.left = 0;
             this.velocity[X] = 0;
         }
     }
-        // Get pre-defined coordinates
 
-        //input frames as "frames" because frames: is not actually a variable, it is a string. frames: is equivalent to "frames".
-        //currentFrame is a variable that is used to get the current frame of the animation. Therefore it is ok.
-        //if we setup something like let frames = "frames" then we would have to use frames["currentFrame"] instead of currentFrame.
-        /*
-        const animation = this.SPRITE_FRAMES[state];
-        // Get current frame
-        const currentFrame = animation.currentFrame;
-        const [xPos, yPos] = animation.frames[currentFrame];
-        console.log("Attack!" + dir);
-        
-        // Update to next frame (loop if needed)
-        animation.currentFrame = (currentFrame + 1) % animation.frames.length;
-        
-        // Handle direction
-        if (dir === "left") {
-            this.element.style.transform = "scaleX(-1)";
-        } else if (dir === "right"){
-            this.element.style.transform = "scaleX(1)";
-        }
-        
-        return [xPos, yPos];*/
     checkUnderneath(platforms) {
         this.ground = 0;
         platforms.forEach(platform => {
@@ -363,6 +309,7 @@ class Enemy extends GameObject {
         this.speed = speed;
         this.platform = platform;
         this.direction = 1;
+        this.health = 2;
         this.createElement();
     }
 
@@ -370,19 +317,17 @@ class Enemy extends GameObject {
         this.element = document.createElement("div");
         this.element.className = "enemy";
         this.element.style.position = "absolute";
-        this.element.style.backgroundColor = "red";
+        this.element.style.backgroundColor = "#FF5E5E";
         this.updateElementPosition();
         document.getElementById("gameContainer").appendChild(this.element);
     }
 
     move() {
         if (this.platform) {
-            // Move within platform bounds
             if (this.left + this.width >= this.platform.right || this.left <= this.platform.left) {
                 this.direction *= -1;
             }
         } else {
-            // Fallback: move within world bounds
             if (this.left + this.width >= game.worldWidth || this.left <= 0) {
                 this.direction *= -1;
             }
@@ -390,6 +335,46 @@ class Enemy extends GameObject {
         
         this.left += this.direction * this.speed;
         this.right = this.left + this.width;
+        this.updateElementPosition();
+    }
+}
+
+class Ladders extends GameObject {
+    constructor(left, bottom, width, height) { 
+        super(left, bottom, width, height);
+        this.createElement();
+    }
+
+    createElement() {
+        this.element = document.createElement("div");
+        this.element.className = "ladder";
+        this.element.style.position = "absolute";
+        this.element.style.backgroundColor = "#00FF00";
+        this.updateElementPosition();
+        document.getElementById("gameContainer").appendChild(this.element);
+    }
+}
+
+class Lava extends GameObject {
+    constructor(left, bottom, width, height) {
+        super(left, bottom, width, height);
+        this.speed = 0;
+        this.createElement();
+    }
+
+    createElement() {
+        this.element = document.createElement("div");
+        this.element.className = "lava";
+        this.element.style.position = "absolute";
+        this.element.style.width = this.intToPx(this.width);
+        this.element.style.height = this.intToPx(this.height);
+        this.updateElementPosition();
+        document.getElementById("gameContainer").appendChild(this.element);
+    }
+
+    update() {
+        this.bottom += this.speed;
+        this.top = this.bottom + this.height;
         this.updateElementPosition();
     }
 }
@@ -421,7 +406,7 @@ class Camera {
     updateScreenBounds() {
         this.screenFollowRight = window.innerWidth * 0.75;
         this.screenFollowLeft = window.innerWidth * 0.25;
-        this.screenFollowUp = window.innerHeight * 0.75;
+        this.screenFollowUp = window.innerHeight * 0.65;
         this.screenFollowDown = window.innerHeight * 0.25;
     }
 }
@@ -433,52 +418,64 @@ class Game {
         this.enemies = [];
         this.player = null;
         this.camera = null;
-        this.worldWidth = 3000;
+        this.lava = null;
+        this.worldWidth = 2000;
+        this.isGameOver = false;
+        
+        // Store handler references
+        this.keyDownHandler = (e) => this.player.handleKeyDown(e);
+        this.keyUpHandler = (e) => this.player.handleKeyDown(e);
+        
         this.initialize();
     }
 
     initialize() {
+        //reset event listeners to avoid duplicates
+        document.removeEventListener("keydown", this.keyDownHandler);
+        document.removeEventListener("keyup", this.keyUpHandler);
+
         // Create player
-        this.player = new Player(100, 200, 100, 100);
+        this.player = new Player(500, 50, 120, 100);
+
+        // Update handler references to use the new player
+        this.keyDownHandler = (e) => this.player.handleKeyDown(e);
+        this.keyUpHandler = (e) => this.player.handleKeyUp(e);
+
+        // Create lava (full width of world, starting below screen)
+        this.lava = new Lava(0, -3100, this.worldWidth);
     
         // Create platforms
         this.platforms = [];
-        const platformCount = 20; // Number of platforms to generate
+        const platformCount = 20;
         const minWidth = 1100;
         const maxWidth = 1500;
         const minHeight = 20;
-        const verticalSpacing = 250; // Vertical spacing between platform layers
+        const verticalSpacing = 600;
     
         // Create ground platform
-        this.platforms.push(new Platform(0, 0, this.worldWidth, 20));
+        this.platforms.push(new Platform(-20, -20, this.worldWidth, 20));
     
         // Generate random platforms
         let lastX = 0;
         let lastY = 0;
         
         for (let i = 0; i < platformCount; i++) {
-            // Random width and height
             const width = Math.floor(Math.random() * (maxWidth - minWidth + 1)) + minWidth;
-            const height = minHeight; // Keep height consistent or use random if you prefer
+            const height = minHeight;
             
-            // Random position with some constraints
             let x = Math.random() * 1000;
-            let y = lastY + verticalSpacing; 
+            let y = lastY + verticalSpacing;
             
-            // Ensure platforms stay within world bounds
             if (x + width > this.worldWidth) {
                 x = this.worldWidth - width - 50;
             }
             
-            // Create the platform
             this.platforms.push(new Platform(x, y, width, height));
             
-            // Update last positions for next platform
             lastX = x;
             lastY = y;
             
-            // Random chance to create an enemy on this platform
-            if (Math.random() > 0.4) { 
+            if (Math.random() > 0.1) { 
                 const enemyWidth = 80;
                 const enemyHeight = 160;
                 this.enemies.push(new Enemy(
@@ -487,74 +484,44 @@ class Game {
                     enemyWidth,
                     enemyHeight,
                     5,
-                    this.platforms[this.platforms.length - 1] // Assign the platform to the enemy
+                    this.platforms[this.platforms.length - 1]
                 ));
             }
         }
     
-        // Create enemies (you can keep your original enemy creation or use the random one above)
-        // this.enemies = [new Enemy(this.platforms[1].left, this.platforms[1].top, 80, 160)];
-    
         // Initialize camera
         this.camera = new Camera(this.player, this.gameContainer);
-    
-        // Set up event listeners
-        document.addEventListener("keydown", (e) => this.player.handleKeyDown(e));
-        document.addEventListener("keyup", (e) => this.player.handleKeyUp(e));
+        
+        // Add new event listeners
+        document.addEventListener("keydown", this.keyDownHandler);
+        document.addEventListener("keyup", this.keyUpHandler);
     
         // Start game loop
         this.gameLoop();
     }
+
     checkAttackHit(direction) {
         const playerMidX = this.player.left + (this.player.width / 2);
         
         const attackHitbox = {
             left: direction === "left" ? this.player.left - this.player.attackRange : playerMidX,
             right: direction === "right" ? this.player.right + this.player.attackRange : playerMidX,
-            top: this.player.top , // Slightly above player
-            bottom: this.player.bottom  // Slightly below player
+            top: this.player.top,
+            bottom: this.player.bottom
         };
     
-        // Debug visualization
-        console.log("Attack hitbox:", attackHitbox);
-        this.showAttackRange(attackHitbox);
-    
-        // Check enemy collisions
         this.enemies.forEach((enemy, index) => {
             if (this.checkHitboxCollision(attackHitbox, enemy)) {
-                console.log("Enemy hit!");
-                enemy.health = 2;
-                enemy.element.style.backgroundColor = "purple";
-    
-                // Remove the enemy's DOM element after a short time
-                setTimeout(() => {
-                    enemy.element.style.backgroundColor = "red";
-                    this.gameContainer.removeChild(enemy.element);
-                    this.enemies.splice(index, 1); // Remove enemy from the array
-                }, 200);
+                enemy.health--;
+                if (enemy.health <= 0) {
+                    enemy.element.style.backgroundColor = "purple";
+                    setTimeout(() => {
+                        this.gameContainer.removeChild(enemy.element);
+                        this.enemies.splice(index, 1);
+                    }, 200);
+                }
             }
         });
-    }
-
-    showAttackRange(hitbox) {
-        // Store only modified properties
-        const original = {
-            width: this.player.element.style.width,
-            left: this.player.element.style.left,
-            opacity: this.player.element.style.opacity
-        };
-        
-        // Apply temporary attack styles
-        this.player.element.style.width = `${hitbox.right - hitbox.left}px`;
-        this.player.element.style.left = `${hitbox.left - this.camera.offsetX}px`;
-        this.player.element.style.opacity = "0.7";
-        
-        // Restore originals
-        setTimeout(() => {
-            this.player.element.style.width = original.width;
-            this.player.element.style.left = original.left;
-            this.player.element.style.opacity = original.opacity;
-        }, 100);
     }
 
     checkHitboxCollision(hitbox, enemy) {
@@ -566,20 +533,88 @@ class Game {
         );
     }
 
+    checkLavaCollision() {
+        if (this.player.collidesWith(this.lava)) {
+            this.handlePlayerDeath("Drowned in lava!");
+        }
+    }
+
+    handlePlayerDeath(reason) {
+        console.log(`Player died! Reason: ${reason}`);
+        this.isGameOver = true;
+        
+        const deathScreen = document.createElement("div");
+        deathScreen.style.position = "fixed";
+        deathScreen.style.top = "0";
+        deathScreen.style.left = "0";
+        deathScreen.style.width = "100%";
+        deathScreen.style.height = "100%";
+        deathScreen.style.backgroundColor = "rgba(0,0,0,0.8)";
+        deathScreen.style.color = "white";
+        deathScreen.style.display = "flex";
+        deathScreen.style.flexDirection = "column";
+        deathScreen.style.justifyContent = "center";
+        deathScreen.style.alignItems = "center";
+        deathScreen.style.zIndex = "1000";
+        
+        deathScreen.innerHTML = `
+            <h1>Game Over</h1>
+            <p>${reason}</p>
+            <button id="restartButton" style="padding: 10px 20px; font-size: 18px; margin-top: 20px;">Restart Game</button>
+        `;
+        
+        document.body.appendChild(deathScreen);
+        
+        document.getElementById("restartButton").addEventListener("click", () => {
+            document.body.removeChild(deathScreen);
+            this.resetGame();
+        });
+    }
+
+    resetGame() {
+        // Clear the game state
+        this.gameContainer.innerHTML = '<div id="box"></div>';
+        
+        // Reset player state
+        if (this.player) {
+            this.player.keysPressed = {
+                left: false,
+                right: false,
+                up: false,
+                down: false
+            };
+            this.player.numJumps = 0;
+            this.player.isJumping = false;
+            this.player.velocity = [0, 0];
+        }
+        
+        // Clear other game objects
+        this.enemies = [];
+        this.platforms = [];
+        this.isGameOver = false;
+        
+        // Reinitialize
+        this.initialize();
+    }
+
     gameLoop() {
+        if (this.isGameOver) return;
+        
         this.player.updatePosition(this.platforms);
         this.enemies.forEach(enemy => {
-            enemy.move(Platform);
+            enemy.move();
             this.checkPlayerEnemyCollision(enemy);
         });
+        this.lava.update();
+        this.checkLavaCollision();
         this.camera.update();
+        
         requestAnimationFrame(() => this.gameLoop());
     }
 
     checkPlayerEnemyCollision(enemy) {
         if (this.player.collidesWith(enemy)) {
-            console.log("Player collided with enemy!");
-            box.style.backgroundColor = "red";
+            this.handlePlayerDeath("Killed by enemy!");
         }
     }
 }
