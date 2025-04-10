@@ -7,7 +7,7 @@ body {
 
 #gameContainer {
     position: absolute;
-    width: 2000px; 
+    width: 1000px; 
     height: 100vh; /* Full height */
     
 }
@@ -23,6 +23,7 @@ background-repeat: no-repeat;
 background-image: url('player.png');
 background-position: 0px -10px;
 transform-origin: center;
+z-index: 1;
 }
 
 .ladder {
@@ -30,7 +31,7 @@ transform-origin: center;
     background-image: url('ladder.png');
     width: 20px;
     height: 580px;
-    background-color: #8B4513; /* Brown color for the ladder */
+    /* background-color: #8B4513; Brown color for the ladder */
     bottom: 0px; /* Adjust as needed */
     left: 200px; /* Adjust as needed */
 }
@@ -39,7 +40,7 @@ transform-origin: center;
     position: absolute;
     width: 80px;
     height: 160px;
-    background-color: #FF5E5E;
+    background-color: #ffffff;
     bottom: 0px;
     left: 100px; /* Adjust as needed */
 }
@@ -63,11 +64,4 @@ transform-origin: center;
     background-color: #202020;
     bottom: 200px;
     left: 100px;
-}
-
-image {
-    position:absolute;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
