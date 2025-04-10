@@ -7,7 +7,7 @@ Please create the following:
 -Login & Data Storage
 
 Please fix: 
--Death detection by lava
+ladder collision
 */
 // Constants
 // Constants
@@ -141,6 +141,10 @@ class Player extends GameObject {
             this.velocity[X] += ACCEL;
             this.direction = "right";
         }
+        if (this.right > 2000) {
+            this.left = 2000 - this.width;
+            this.velocity[X] = 0;
+        }
         
         if (this.isAttacking) {
             this.state = "attack";
@@ -210,6 +214,15 @@ class Player extends GameObject {
         
         return [xPos, yPos];
     }
+
+    isTouchingLadder(ladders) {
+        return ladders.some(ladder => (
+            this.left < ladder.right &&
+            this.right > ladder.left &&
+            this.bottom < ladder.top &&
+            this.top > ladder.bottom
+        ));
+    }    
 
     collisionDetection(platforms) {
         if (this.bottom <= this.ground) {
@@ -309,15 +322,13 @@ class Enemy extends GameObject {
         this.speed = speed;
         this.platform = platform;
         this.direction = 1;
-        this.health = 2;
+        this.health = 1;
         this.createElement();
     }
 
     createElement() {
         this.element = document.createElement("div");
         this.element.className = "enemy";
-        this.element.style.position = "absolute";
-        this.element.style.backgroundColor = "#FF5E5E";
         this.updateElementPosition();
         document.getElementById("gameContainer").appendChild(this.element);
     }
@@ -339,7 +350,7 @@ class Enemy extends GameObject {
     }
 }
 
-class Ladders extends GameObject {
+class ladder extends GameObject {
     constructor(left, bottom, width, height) { 
         super(left, bottom, width, height);
         this.createElement();
@@ -349,7 +360,6 @@ class Ladders extends GameObject {
         this.element = document.createElement("div");
         this.element.className = "ladder";
         this.element.style.position = "absolute";
-        this.element.style.backgroundColor = "#00FF00";
         this.updateElementPosition();
         document.getElementById("gameContainer").appendChild(this.element);
     }
@@ -365,9 +375,6 @@ class Lava extends GameObject {
     createElement() {
         this.element = document.createElement("div");
         this.element.className = "lava";
-        this.element.style.position = "absolute";
-        this.element.style.width = this.intToPx(this.width);
-        this.element.style.height = this.intToPx(this.height);
         this.updateElementPosition();
         document.getElementById("gameContainer").appendChild(this.element);
     }
@@ -437,13 +444,18 @@ class Game {
         // Create player
         this.player = new Player(500, 50, 120, 100);
 
+        
+
         // Update handler references to use the new player
         this.keyDownHandler = (e) => this.player.handleKeyDown(e);
         this.keyUpHandler = (e) => this.player.handleKeyUp(e);
 
         // Create lava (full width of world, starting below screen)
-        this.lava = new Lava(0, -3100, this.worldWidth);
-    
+        this.lava = new Lava(0, -4000, this.worldWidth, 3000);
+
+        this.ladders = [];
+        this.ladder = new ladder(980, -20, 100, 620);
+        
         // Create platforms
         this.platforms = [];
         const platformCount = 20;
@@ -469,6 +481,10 @@ class Game {
             if (x + width > this.worldWidth) {
                 x = this.worldWidth - width - 50;
             }
+
+            const newLadder = new ladder(x + Math.random() * 1000, y, 100, 620);
+            this.ladders.push(newLadder);
+
             
             this.platforms.push(new Platform(x, y, width, height));
             
@@ -534,10 +550,21 @@ class Game {
     }
 
     checkLavaCollision() {
-        if (this.player.collidesWith(this.lava)) {
+        const player = this.player;
+        const lava = this.lava;
+    
+        const isColliding = (
+            player.left < lava.right &&
+            player.right > lava.left &&
+            player.bottom < lava.top &&
+            player.top > lava.bottom
+        );
+    
+        if (isColliding) {
             this.handlePlayerDeath("Drowned in lava!");
         }
     }
+    
 
     handlePlayerDeath(reason) {
         console.log(`Player died! Reason: ${reason}`);
