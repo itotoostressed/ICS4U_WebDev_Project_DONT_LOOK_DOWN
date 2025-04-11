@@ -11,7 +11,7 @@ class DeathScreen {
         
         document.getElementById('menuButton').addEventListener('click', () => {
             this.hide();
-            window.location.href = 'menuScreen.html';
+            window.location.href = 'menu.html';
         });
     }
     
