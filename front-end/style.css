@@ -13,19 +13,38 @@ body {
 }
 
 #box {
-position: absolute;
-width: 120px;
-height: 160px;
-display:block;
-bottom: 0px;
-left: 0px;   
-background-repeat: no-repeat;
-background-image: url('player.png');
-background-position: 0px -10px;
-transform-origin: center;
-z-index: 1;
+    position: absolute;
+    width: 120px;
+    height: 160px;
+    display:block;
+    bottom: 0px;
+    left: 0px;   
+    background-repeat: no-repeat;
+    background-image: url('player.png');
+    background-position: 0px -10px;
+    transform-origin: center;
+    z-index: 1;
 }
 
+#statBox {
+    position: fixed; /* Changed from absolute to fixed */
+    width: 100px;
+    height: 100px;
+    top: 20px;
+    left: 20px;
+    background-color: rgba(0,0,0,0.5); /* Added for visibility */
+    color: white;
+    z-index: 100;
+    will-change: transform;
+}
+
+.exit {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background-image: url('exit.png');
+    background-size: cover;
+}
 .ladder {
     position: absolute;
     background-image: url('ladder.png');
@@ -38,9 +57,10 @@ z-index: 1;
 
 .enemy {
     position: absolute;
+    background-image: url('enemy.png');
+    background-size: cover;
     width: 80px;
-    height: 160px;
-    background-color: #ffffff;
+    height: 80px;
     bottom: 0px;
     left: 100px; /* Adjust as needed */
 }
