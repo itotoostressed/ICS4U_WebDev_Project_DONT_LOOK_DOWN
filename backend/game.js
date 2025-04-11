@@ -55,6 +55,25 @@ class GameObject {
             this.element.style.height = this.intToPx(this.height);
         }
     }
+    // specific method for the enemy because hitbox is not a square/rectangle
+    enemyCollision(other, direction) {
+        if (direction === "left") { //change hitbox collision for facing left
+            return (
+                this.left + 20 < other.right &&
+                this.right > other.left &&
+                this.bottom + 20 < other.top &&
+                this.top - 20> other.bottom
+            );
+        }
+        else { // default hitbox when facing right
+            return (
+                this.left + 20 < other.right &&
+                this.right - 65 > other.left &&
+                this.bottom + 20 < other.top &&
+                this.top - 20> other.bottom
+            );
+        }
+    }
 
     collidesWith(other) {
         return (
@@ -668,10 +687,10 @@ class Game {
     }
 
     checkPlayerEnemyCollision(enemy) {
-        if (this.player.collidesWith(enemy)) {
+        if (this.player.enemyCollision(enemy, this.player.direction)) {
             this.handlePlayerDeath("Killed by enemy!");
         }
-    }
+    }    
 }
 
 // Start the game
