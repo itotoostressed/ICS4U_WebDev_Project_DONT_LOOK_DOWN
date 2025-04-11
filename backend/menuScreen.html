@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Don't Look Down!</title>
+    <link rel="stylesheet" href="menuScreen.css">
+    <link href="https://fonts.cdnfonts.com/css/minecraft-4" rel="stylesheet">
+</head>
+<body>
+    <div class="menu-screen">
+        <div class="menu-title"></div>
+        
+        <div class="menu-buttons">
+            <button class="menu-button" id="startButton">Start Game</button>
+            <button class="menu-button" id="optionsButton">Difficulty</button>
+            <button class="menu-button" id="creditsButton">Credits</button>
+            <button class="menu-button" id="statsButton">Statistics</button>
+        </div>
+
+        <div class="options-panel hidden" id="optionsPanel">
+            <h1>Difficulty</h1>
+            <select id="difficultySelect">
+                <option value="easy">Beta</option>
+                <option value="normal">Alpha</option>
+                <option value="hard">Sigma</option>
+            </select>
+            <button id="saveOptions">Save</button>
+        </div>
+
+        <div class="credits-panel hidden" id="creditsPanel">
+            <h1>Credits</h1>
+            <p>Game created by Matthew Zhang</p>
+            <p>Assets: 2d Game Assets</p>
+            <p>Sound by --------</p>
+            <button id="closeCredits">Close</button>
+        </div>
+    </div>
+    <script src="menu.js"></script>
+</body>
+</html>
