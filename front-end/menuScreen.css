@@ -1,1 +1,87 @@
+@import url('https://fonts.cdnfonts.com/css/minecraft-4');
 
+body {
+    background-image: url('dungBackground.png');
+}
+
+h1 {
+    font-family: 'Minecraft', sans-serif;
+    font-size: 48px;
+    color: white;
+    text-align: center;
+}
+p  {
+    font-family: 'Minecraft', sans-serif;
+    font-size: 24px;
+    color: white;
+    text-align: center;
+}
+
+.menu-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    color: white;
+}
+
+.menu-title {
+    background-image: url('Title.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 1200px; /* Set explicit dimensions */
+    height: 200px;
+    display: inline-block; /* For proper sizing */
+}
+
+.menu-buttons {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.menu-button {
+    padding: 20px 40px;
+    font-size: 24px;
+    background: #654321;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    text-transform: uppercase;
+    font-family: 'Minecraft', sans-serif;                             
+    letter-spacing: 1px;
+}
+
+.menu-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    background: #8B4513;
+}
+
+.options-panel, .credits-panel {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 60px;
+    border-radius: 10px;
+    max-width: 600px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
+}
+
+#difficultySelect {
+    padding: 10px;
+    font-size: 18px;
+    margin: 15px;
+    width: 200px;
+}
