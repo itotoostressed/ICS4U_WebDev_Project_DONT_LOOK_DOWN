@@ -40,8 +40,4 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Settings saved!');
         optionsPanel.classList.add('hidden');
     });
-
-    document.getElementById('closeCredits').addEventListener('click', () => {
-        creditsPanel.classList.add('hidden');
-    });
 });
