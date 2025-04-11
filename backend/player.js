@@ -1,13 +1,17 @@
 /*
 NOTES!
 Please create the following:
--Ladder
--Tall & Short enemies (rename current enemies to tall enemies or whatever)
--Main Menu
--Login & Data Storage
+-Sound
+-Statistics
+    -# of times attacked
+    -# of times died to Enemies
+    -# of times died to Lava
+    -# of attempts
+    -# of Clears
+    -# of Enemies Killed
 
 Please fix: 
-ladder collision
+Win screen innerHtml!
 */
 // Constants
 // Constants
@@ -215,15 +219,6 @@ class Player extends GameObject {
         return [xPos, yPos];
     }
 
-    isTouchingLadder(ladders) {
-        return ladders.some(ladder => (
-            this.left < ladder.right &&
-            this.right > ladder.left &&
-            this.bottom < ladder.top &&
-            this.top > ladder.bottom
-        ));
-    }    
-
     collisionDetection(platforms) {
         if (this.bottom <= this.ground) {
             this.bottom = this.ground;
@@ -299,6 +294,20 @@ class Player extends GameObject {
     }
 }
 
+class exit extends GameObject {
+    constructor(left, bottom, width, height) {
+        super(left, bottom, width, height);
+        this.createElement();
+    }
+    createElement() {
+        this.element = document.createElement("div");
+        this.element.className = "exit";
+        this.element.style.position = "absolute";
+        this.updateElementPosition();
+        document.getElementById("gameContainer").appendChild(this.element);
+    }
+}
+
 class Platform extends GameObject {
     constructor(left, bottom, width, height) {
         super(left, bottom, width, height);
@@ -337,10 +346,12 @@ class Enemy extends GameObject {
         if (this.platform) {
             if (this.left + this.width >= this.platform.right || this.left <= this.platform.left) {
                 this.direction *= -1;
+                this.element.style.transform = `scaleX(${this.direction})`;
             }
         } else {
             if (this.left + this.width >= game.worldWidth || this.left <= 0) {
                 this.direction *= -1;
+                this.element.style.transform = `scaleX(${this.direction})`;
             }
         }
         
@@ -368,7 +379,7 @@ class ladder extends GameObject {
 class Lava extends GameObject {
     constructor(left, bottom, width, height) {
         super(left, bottom, width, height);
-        this.speed = 0;
+        this.speed = 5;
         this.createElement();
     }
 
@@ -392,22 +403,27 @@ class Camera {
         this.container = container;
         this.offsetX = 0;
         this.offsetY = 0;
+        this.statBox = document.getElementById("statBox");
         this.updateScreenBounds();
         window.addEventListener("resize", () => this.updateScreenBounds());
     }
 
     update() {
+        // Horizontal camera movement with bounds
         if (this.follow.left > this.screenFollowRight - this.offsetX) {
             this.offsetX = this.follow.left - this.screenFollowRight;
         } else if (this.follow.left < this.screenFollowLeft - this.offsetX) {
             this.offsetX = this.follow.left - this.screenFollowLeft;
         }
-        if (this.follow.bottom > this.screenFollowUp - this.offsetY) {
-            this.offsetY = this.follow.bottom - this.screenFollowUp;
-        } else if (this.follow.bottom < this.screenFollowDown - this.offsetY) {
-            this.offsetY = this.follow.bottom - this.screenFollowDown;
-        }
+        
+        // Vertical camera movement (always follows player)
+        this.offsetY = this.follow.bottom - this.screenFollowDown;
+        
+        // Apply transform to game container
         this.container.style.transform = `translate(${-this.offsetX}px, ${this.offsetY}px)`;
+        
+        // Stat box only follows vertically
+        // this.statBox.style.transform = `translateY(${-this.offsetY}px)`;
     }
 
     updateScreenBounds() {
@@ -423,15 +439,45 @@ class Game {
         this.gameContainer = document.getElementById("gameContainer");
         this.platforms = [];
         this.enemies = [];
+        this.ladders = [];
         this.player = null;
         this.camera = null;
         this.lava = null;
+        this.deathScreen = new DeathScreen(this);
         this.worldWidth = 2000;
         this.isGameOver = false;
         
         // Store handler references
         this.keyDownHandler = (e) => this.player.handleKeyDown(e);
         this.keyUpHandler = (e) => this.player.handleKeyDown(e);
+
+        // Get difficulty from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const difficulty = urlParams.get('difficulty') || 'normal';
+        
+        // Set game parameters based on difficulty
+        this.difficultySettings = {
+            easy: {
+                enemySpeed: 5,
+                enemyCount: 0.3,
+                lavaRiseSpeed: 5,
+                platformCount: 10  
+            },
+            normal: {
+                enemySpeed: 10,
+                enemyCount: 0.5,
+                lavaRiseSpeed: 7,
+                platformCount: 20  
+            },
+            hard: {
+                enemySpeed: 15,
+                enemyCount: .99,
+                lavaRiseSpeed: 7.5,
+                platformCount: 60  
+            }
+        };
+        
+        this.currentDifficulty = this.difficultySettings[difficulty] || this.difficultySettings.normal;
         
         this.initialize();
     }
@@ -444,8 +490,6 @@ class Game {
         // Create player
         this.player = new Player(500, 50, 120, 100);
 
-        
-
         // Update handler references to use the new player
         this.keyDownHandler = (e) => this.player.handleKeyDown(e);
         this.keyUpHandler = (e) => this.player.handleKeyUp(e);
@@ -453,20 +497,20 @@ class Game {
         // Create lava (full width of world, starting below screen)
         this.lava = new Lava(0, -4000, this.worldWidth, 3000);
 
-        this.ladders = [];
         this.ladder = new ladder(980, -20, 100, 620);
+        this.ladders.push(this.ladder);
         
         // Create platforms
         this.platforms = [];
-        const platformCount = 20;
+        const platformCount = this.currentDifficulty.platformCount; // Use difficulty setting
         const minWidth = 1100;
         const maxWidth = 1500;
         const minHeight = 20;
         const verticalSpacing = 600;
-    
+
         // Create ground platform
         this.platforms.push(new Platform(-20, -20, this.worldWidth, 20));
-    
+
         // Generate random platforms
         let lastX = 0;
         let lastY = 0;
@@ -475,15 +519,27 @@ class Game {
             const width = Math.floor(Math.random() * (maxWidth - minWidth + 1)) + minWidth;
             const height = minHeight;
             
-            let x = Math.random() * 1000;
+            let x = Math.random() * 2000;
             let y = lastY + verticalSpacing;
             
             if (x + width > this.worldWidth) {
                 x = this.worldWidth - width - 50;
             }
+            
+            //create ladders for each platform
+            if (i < platformCount - 1) {
+                const newLadder = new ladder(x + Math.random() * 1000, y, 100, 620);
+                this.ladders.push(newLadder);                
+            }
+            else {
+                //create exit door
+                const exitDoor = new exit(x + Math.random() * 1000, y, 200, 200);
+                this.gameContainer.appendChild(exitDoor.element);
+                this.exit = exitDoor;
+                this.ladders.push(exitDoor);
+            }
+            
 
-            const newLadder = new ladder(x + Math.random() * 1000, y, 100, 620);
-            this.ladders.push(newLadder);
 
             
             this.platforms.push(new Platform(x, y, width, height));
@@ -491,20 +547,22 @@ class Game {
             lastX = x;
             lastY = y;
             
-            if (Math.random() > 0.1) { 
-                const enemyWidth = 80;
-                const enemyHeight = 160;
+            if (Math.random() < this.currentDifficulty.enemyCount) { 
+                const enemyWidth = 120;
+                const enemyHeight = 100;
                 this.enemies.push(new Enemy(
                     x + Math.random() * (width - enemyWidth),
                     y + height,
                     enemyWidth,
                     enemyHeight,
-                    5,
+                    this.currentDifficulty.enemySpeed,  // Use difficulty-based speed
                     this.platforms[this.platforms.length - 1]
                 ));
             }
         }
-    
+        
+        // Set lava speed based on difficulty
+        this.lava.speed = this.currentDifficulty.lavaRiseSpeed;
         // Initialize camera
         this.camera = new Camera(this.player, this.gameContainer);
         
@@ -549,78 +607,48 @@ class Game {
         );
     }
 
-    checkLavaCollision() {
+    checkObjectCollision() {
         const player = this.player;
         const lava = this.lava;
-    
-        const isColliding = (
-            player.left < lava.right &&
-            player.right > lava.left &&
-            player.bottom < lava.top &&
-            player.top > lava.bottom
-        );
-    
-        if (isColliding) {
+        const exit = this.exit;
+
+        if (player.collidesWith(exit)) {
+            this.handlePlayerDeath("You've reached the exit!");
+        }
+
+        if (player.collidesWith(lava)) {
             this.handlePlayerDeath("Drowned in lava!");
         }
-    }
-    
 
-    handlePlayerDeath(reason) {
-        console.log(`Player died! Reason: ${reason}`);
-        this.isGameOver = true;
-        
-        const deathScreen = document.createElement("div");
-        deathScreen.style.position = "fixed";
-        deathScreen.style.top = "0";
-        deathScreen.style.left = "0";
-        deathScreen.style.width = "100%";
-        deathScreen.style.height = "100%";
-        deathScreen.style.backgroundColor = "rgba(0,0,0,0.8)";
-        deathScreen.style.color = "white";
-        deathScreen.style.display = "flex";
-        deathScreen.style.flexDirection = "column";
-        deathScreen.style.justifyContent = "center";
-        deathScreen.style.alignItems = "center";
-        deathScreen.style.zIndex = "1000";
-        
-        deathScreen.innerHTML = `
-            <h1>Game Over</h1>
-            <p>${reason}</p>
-            <button id="restartButton" style="padding: 10px 20px; font-size: 18px; margin-top: 20px;">Restart Game</button>
-        `;
-        
-        document.body.appendChild(deathScreen);
-        
-        document.getElementById("restartButton").addEventListener("click", () => {
-            document.body.removeChild(deathScreen);
-            this.resetGame();
+        this.ladders.forEach(ladder => {
+        if (player.collidesWith(ladder)) {
+            player.numJumps = 1;
+            console.log("Player is on ladder!");
+            }
         });
     }
 
+    handlePlayerDeath(reason) {
+        this.isGameOver = true;
+        this.deathScreen.show(reason);
+    }
+
     resetGame() {
-        // Clear the game state
+        // Clear the game state by reinitializing the container
         this.gameContainer.innerHTML = '<div id="box"></div>';
         
-        // Reset player state
-        if (this.player) {
-            this.player.keysPressed = {
-                left: false,
-                right: false,
-                up: false,
-                down: false
-            };
-            this.player.numJumps = 0;
-            this.player.isJumping = false;
-            this.player.velocity = [0, 0];
-        }
-        
-        // Clear other game objects
+        // Clear all arrays
         this.enemies = [];
         this.platforms = [];
+        this.ladders = [];
+        
+        // Reset game state
         this.isGameOver = false;
         
-        // Reinitialize
+        // Hide death screen if visible
+        this.deathScreen.hide();
+        
+        // Reinitialize everything (this will recreate all game objects)
         this.initialize();
     }
 
@@ -633,7 +661,7 @@ class Game {
             this.checkPlayerEnemyCollision(enemy);
         });
         this.lava.update();
-        this.checkLavaCollision();
+        this.checkObjectCollision();
         this.camera.update();
         
         requestAnimationFrame(() => this.gameLoop());
