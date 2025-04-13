@@ -1,3 +1,12 @@
+@import url('https://fonts.cdnfonts.com/css/minecraft-4');
+
+h1 {
+    font-family: 'Minecraft', sans-serif;
+    font-size: 48px;
+    color: white;
+    text-align: center;
+}
+
 .death-screen {
     position: fixed;
     top: 0;
@@ -11,21 +20,23 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    font-family: 'Minecraft', sans-serif;
 }
 
 .death-screen h1 {
-    font-size: 3em;
+    font-size: 8em;
     margin-bottom: 20px;
 }
 
 .death-screen p {
-    font-size: 1.5em;
+    font-size: 4em;
     margin-bottom: 30px;
 }
 
 .death-screen button {
-    padding: 15px 30px;
-    font-size: 1.2em;
+    font-family: 'Minecraft', sans-serif;
+    padding: 25px;
+    font-size: 2em;
     margin: 10px;
     background: #654321;
     color: white;
