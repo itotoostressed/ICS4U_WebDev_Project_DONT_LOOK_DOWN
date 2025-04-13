@@ -15,8 +15,15 @@ class DeathScreen {
         });
     }
     
-    show(reason) {
+    show(reason, title = "GAME OVER") {  // Add title parameter with default value
         this.reasonElement.textContent = reason;
+        // Get or create the title element
+        let titleElement = this.element.querySelector('h1');
+        if (!titleElement) {
+            titleElement = document.createElement('h1');
+            this.element.insertBefore(titleElement, this.reasonElement);
+        }
+        titleElement.textContent = title;  // Set the title text
         this.element.classList.remove('hidden');
     }
     
