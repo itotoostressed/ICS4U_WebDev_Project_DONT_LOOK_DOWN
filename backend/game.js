@@ -1,20 +1,3 @@
-/*
-NOTES!
-Please create the following:
--Sound
--Statistics
-    -# of times attacked
-    -# of times died to Enemies
-    -# of times died to Lava
-    -# of attempts
-    -# of Clears
-    -# of Enemies Killed
-
-Please fix: 
-Win screen innerHtml!
-*/
-// Constants
-// Constants
 const X = 0;
 const Y = 1;
 const MAX_VEL = 10;
@@ -23,6 +6,28 @@ const FRICTION = 0.9;
 const GRAVITY = -0.7;
 const JUMP_FORCE = 15;
 const MAX_JUMP = 2;
+
+const backgroundMusic = window.backgroundMusic || new Audio('sounds/gameTrack.mp4');
+const deathLava = new Audio('sounds/lavaDeath.mp3');
+const deathMonster = new Audio('sounds/monsterDeath.wav');
+const victoryMusic = new Audio('sounds/victory.mp3');
+
+backgroundMusic.volume = 0.5;
+backgroundMusic.loop = true;
+deathMonster.volume = 0.8;
+deathLava.volume = 0.8;
+victoryMusic.loop = true;
+
+
+// Statistics tracking
+const gameStats = JSON.parse(localStorage.getItem('gameStats')) || {
+    jumps: 0,
+    attacks: 0,
+    deaths: 0,
+    enemyDeaths: 0,
+    lavaDeaths: 0,
+    clears: 0
+};
 
 let charSheetPos;
 let frameNum = 0;
@@ -97,7 +102,7 @@ class Player extends GameObject {
         this.isJumping = false;
         this.isAttacking = false;
         this.attackCooldown = 0;
-        this.attackRange = 1000;
+        this.attackRange = 200;
         this.animationSpeed = 5;
         this.animationCounter = 0;
         this.direction = 1;
@@ -281,6 +286,8 @@ class Player extends GameObject {
                     this.velocity[Y] = JUMP_FORCE;
                     this.numJumps++;
                     this.isJumping = true;
+                    gameStats.jumps++;
+                    localStorage.setItem('gameStats', JSON.stringify(gameStats));
                 }
                 break;
             case "s":
@@ -441,8 +448,6 @@ class Camera {
         // Apply transform to game container
         this.container.style.transform = `translate(${-this.offsetX}px, ${this.offsetY}px)`;
         
-        // Stat box only follows vertically
-        // this.statBox.style.transform = `translateY(${-this.offsetY}px)`;
     }
 
     updateScreenBounds() {
@@ -474,17 +479,22 @@ class Game {
         const urlParams = new URLSearchParams(window.location.search);
         const difficulty = urlParams.get('difficulty') || 'normal';
         
+        const musicPlaying = localStorage.getItem('musicEnabled') !== 'false';
+        if (musicPlaying && backgroundMusic.paused) {
+            backgroundMusic.play().catch(e => console.log("Autoplay prevented:", e));
+        }
+
         // Set game parameters based on difficulty
         this.difficultySettings = {
             easy: {
-                enemySpeed: 5,
+                enemySpeed: 7,
                 enemyCount: 0.3,
                 lavaRiseSpeed: 5,
                 platformCount: 10  
             },
             normal: {
                 enemySpeed: 10,
-                enemyCount: 0.5,
+                enemyCount: 0.7,
                 lavaRiseSpeed: 7,
                 platformCount: 20  
             },
@@ -492,7 +502,7 @@ class Game {
                 enemySpeed: 15,
                 enemyCount: .99,
                 lavaRiseSpeed: 7.5,
-                platformCount: 60  
+                platformCount: 40  
             }
         };
         
@@ -502,6 +512,9 @@ class Game {
     }
 
     initialize() {
+
+        this.stopLobbyMusic();
+
         //reset event listeners to avoid duplicates
         document.removeEventListener("keydown", this.keyDownHandler);
         document.removeEventListener("keyup", this.keyUpHandler);
@@ -558,9 +571,6 @@ class Game {
                 this.ladders.push(exitDoor);
             }
             
-
-
-            
             this.platforms.push(new Platform(x, y, width, height));
             
             lastX = x;
@@ -593,6 +603,11 @@ class Game {
         this.gameLoop();
     }
 
+    stopLobbyMusic() {
+        const lobbyMusic = window.lobbyMusic || new Audio('sounds/background.mp4');
+        lobbyMusic.pause();
+    }
+
     checkAttackHit(direction) {
         const playerMidX = this.player.left + (this.player.width / 2);
         
@@ -607,7 +622,9 @@ class Game {
             if (this.checkHitboxCollision(attackHitbox, enemy)) {
                 enemy.health--;
                 if (enemy.health <= 0) {
-                    enemy.element.style.backgroundColor = "purple";
+                    gameStats.attacks++;
+                    localStorage.setItem('gameStats', JSON.stringify(gameStats));
+                    enemy.element.style.backgroundImage = "url('enemyDeath.png')";
                     setTimeout(() => {
                         this.gameContainer.removeChild(enemy.element);
                         this.enemies.splice(index, 1);
@@ -630,31 +647,63 @@ class Game {
         const player = this.player;
         const lava = this.lava;
         const exit = this.exit;
-
+    
         if (player.collidesWith(exit)) {
-            this.handlePlayerDeath("You've reached the exit!");
+            this.handlePlayerWin("You've escaped successfully!");
+            return;
         }
-
+    
         if (player.collidesWith(lava)) {
             this.handlePlayerDeath("Drowned in lava!");
         }
-
+    
         this.ladders.forEach(ladder => {
-        if (player.collidesWith(ladder)) {
-            player.numJumps = 1;
-            console.log("Player is on ladder!");
+            if (player.collidesWith(ladder)) {
+                player.numJumps = 1;
             }
         });
     }
 
     handlePlayerDeath(reason) {
         this.isGameOver = true;
-        this.deathScreen.show(reason);
+        gameStats.deaths++;
+
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
+        
+        if (reason.includes("enemy")) {
+            gameStats.enemyDeaths++;
+            deathMonster.play();
+        } else if (reason.includes("lava")) {
+            gameStats.lavaDeaths++;
+            deathLava.play();
+        }
+        
+        localStorage.setItem('gameStats', JSON.stringify(gameStats));
+        
+        // Different titles for different outcomes
+        const title = reason.includes("exit") ? "VICTORY!" : "GAME OVER";
+        this.deathScreen.show(reason, title);
     }
+
+    // In Game class:
+    handlePlayerWin(message) {
+        gameStats.clears++;
+        localStorage.setItem('gameStats', JSON.stringify(gameStats));
+        this.deathScreen.show(message, "VICTORY!");
+        this.isGameOver = true;
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
+        victoryMusic.play();
+    }
+
 
     resetGame() {
         // Clear the game state by reinitializing the container
         this.gameContainer.innerHTML = '<div id="box"></div>';
+
+        backgroundMusic.play();
+        backgroundMusic.currentTime = 0;
         
         // Clear all arrays
         this.enemies = [];
