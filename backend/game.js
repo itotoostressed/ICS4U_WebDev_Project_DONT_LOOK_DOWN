@@ -9,13 +9,20 @@ const MAX_JUMP = 2;
 
 const backgroundMusic = window.backgroundMusic || new Audio('sounds/gameTrack.mp4');
 const deathLava = new Audio('sounds/lavaDeath.mp3');
+deathLava.volume = 1;
 const deathMonster = new Audio('sounds/monsterDeath.wav');
 const victoryMusic = new Audio('sounds/victory.mp3');
+
+deathLava.load();
+deathMonster.load();
+victoryMusic.load();
+
+var deathLine = 1;
 
 backgroundMusic.volume = 0.5;
 backgroundMusic.loop = true;
 deathMonster.volume = 0.8;
-deathLava.volume = 0.8;
+
 victoryMusic.loop = true;
 
 
@@ -227,7 +234,6 @@ class Player extends GameObject {
         const animation = this.SPRITE_FRAMES[state];
         const frames = Array.isArray(animation) ? animation : animation.frames;
         let currentFrame = Array.isArray(animation) ? 0 : animation.currentFrame;
-        
         const [xPos, yPos] = frames[currentFrame];
         
         if (!Array.isArray(animation)) {
@@ -654,7 +660,24 @@ class Game {
         }
     
         if (player.collidesWith(lava)) {
-            this.handlePlayerDeath("Drowned in lava!");
+            deathLine = Math.floor(Math.random() * 4) + 1; // Generates 1, 2, 3, or 4
+            deathLava.play();
+            switch(deathLine) {
+                case 1:
+                    this.handlePlayerDeath("Wayyy too slow");
+                    break;
+                case 2:
+                    this.handlePlayerDeath("Can't you climb faster?");
+                    break;
+                case 3:
+                    this.handlePlayerDeath("Terminator be like");
+                    break;
+                case 4:
+                    this.handlePlayerDeath("Did you know you can jump using W?");
+                    break;
+                default:
+                    this.handlePlayerDeath("Player drowned in lava!");
+            }
         }
     
         this.ladders.forEach(ladder => {
@@ -667,21 +690,18 @@ class Game {
     handlePlayerDeath(reason) {
         this.isGameOver = true;
         gameStats.deaths++;
-
+    
         backgroundMusic.pause();
         backgroundMusic.currentTime = 0;
         
         if (reason.includes("enemy")) {
             gameStats.enemyDeaths++;
-            deathMonster.play();
         } else if (reason.includes("lava")) {
             gameStats.lavaDeaths++;
-            deathLava.play();
         }
         
         localStorage.setItem('gameStats', JSON.stringify(gameStats));
         
-        // Different titles for different outcomes
         const title = reason.includes("exit") ? "VICTORY!" : "GAME OVER";
         this.deathScreen.show(reason, title);
     }
@@ -704,6 +724,9 @@ class Game {
 
         backgroundMusic.play();
         backgroundMusic.currentTime = 0;
+
+        victoryMusic.pause();
+        victoryMusic.currentTime = 0;
         
         // Clear all arrays
         this.enemies = [];
@@ -736,8 +759,26 @@ class Game {
     }
 
     checkPlayerEnemyCollision(enemy) {
+        deathMonster.currentTime = 0;
+        deathMonster.play().catch(e => console.log("Monster death sound error:", e));
+        deathLine = Math.floor(Math.random() * 4) + 1; // Generates 1, 2, 3, or 4
         if (this.player.enemyCollision(enemy, this.player.direction)) {
-            this.handlePlayerDeath("Killed by enemy!");
+            switch(deathLine) {
+                case 1:
+                    this.handlePlayerDeath("Did you really die to these guys?");
+                    break;
+                case 2:
+                    this.handlePlayerDeath("GG go next");
+                    break;
+                case 3:
+                    this.handlePlayerDeath("Movement Diff");
+                    break;
+                case 4:
+                    this.handlePlayerDeath("Maybe try hitting them next time?");
+                    break;
+                default:
+                    this.handlePlayerDeath("Did you really die to these guys?");
+            }
         }
     }    
 }
