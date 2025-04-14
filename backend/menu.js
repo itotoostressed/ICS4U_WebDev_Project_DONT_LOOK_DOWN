@@ -4,6 +4,7 @@ const creditsButton = document.getElementById('creditsButton');
 const optionsButton = document.getElementById('optionsButton');
 
 const backgroundMusic = new Audio('sounds/background.mp4');
+backgroundMusic.preload = 'auto';
 backgroundMusic.volume = 0.8;
 backgroundMusic.loop = true;
 
